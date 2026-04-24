@@ -1,9 +1,10 @@
-# Smart Campus Operations Hub - Module C (Incident & Maintenance Ticketing)
+# Smart Campus Operations Hub
 
-Production-quality implementation for a university assignment using:
-- Backend: Spring Boot, MongoDB Atlas
-- Frontend: React (Hooks), Axios
-- Security: Role-based (`USER`, `ADMIN`, `TECHNICIAN`)
+Production-quality multi-module backend for a university assignment using:
+- **Backend:** Spring Boot 3.5.14, Java 25 (LTS), MongoDB Atlas
+- **Frontend:** React (Hooks), Axios, Vite
+- **Security:** Role-based HTTP Basic Auth (`USER`, `ADMIN`, `TECHNICIAN`)
+- **Modules:** Module C — Incident & Maintenance Ticketing *(booking module stub ready)*
 
 ## Folder Structure
 
@@ -12,44 +13,43 @@ Smart Campus Operations Hub/
 ├── backend/
 │   ├── pom.xml
 │   ├── src/main/resources/
-│   │   ├── application.properties
 │   │   └── application.properties
-│   └── src/main/java/com/smartcampus/operationshub/ticketing/
-│       ├── SmartCampusTicketingApplication.java
-│       ├── config/
-│       │   └── SecurityConfig.java
-│       ├── controller/
-│       │   └── TicketController.java
-│       ├── dto/
-│       │   ├── AssignTechnicianRequest.java
-│       │   ├── AttachmentResponse.java
-│       │   ├── CommentCreateRequest.java
-│       │   ├── CommentResponse.java
-│       │   ├── TicketCreateRequest.java
-│       │   ├── TicketResponse.java
-│       │   ├── TicketUpdateRequest.java
-│       │   └── UpdateStatusRequest.java
-│       ├── entity/
-│       │   ├── Attachment.java
-│       │   ├── Comment.java
-│       │   ├── Ticket.java
-│       │   ├── TicketCategory.java
-│       │   ├── TicketPriority.java
-│       │   └── TicketStatus.java
-│       ├── exception/
-│       │   ├── BadRequestException.java
-│       │   ├── ForbiddenException.java
-│       │   ├── GlobalExceptionHandler.java
-│       │   └── ResourceNotFoundException.java
-│       ├── repository/
-│       │   ├── AttachmentRepository.java
-│       │   ├── CommentRepository.java
-│       │   └── TicketRepository.java
-│       ├── service/
-│       │   ├── TicketService.java
-│       │   └── impl/TicketServiceImpl.java
-│       └── specification/
-│           └── TicketSpecification.java
+│   └── src/main/java/com/smartcampus/operationshub/
+│       ├── SmartCampusOperationsHubApplication.java   ← root entry point
+│       ├── booking/
+│       │   └── package-info.java                      ← booking module stub
+│       └── ticketing/                                 ← Module C
+│           ├── SmartCampusTicketingApplication.java   ← legacy marker (no @SpringBootApplication)
+│           ├── config/
+│           │   └── SecurityConfig.java
+│           ├── controller/
+│           │   └── TicketController.java
+│           ├── dto/
+│           │   ├── AssignTechnicianRequest.java
+│           │   ├── AttachmentResponse.java
+│           │   ├── CommentCreateRequest.java
+│           │   ├── CommentResponse.java
+│           │   ├── TicketCreateRequest.java
+│           │   ├── TicketResponse.java
+│           │   ├── TicketUpdateRequest.java
+│           │   └── UpdateStatusRequest.java
+│           ├── entity/
+│           │   ├── Attachment.java
+│           │   ├── Comment.java
+│           │   ├── Ticket.java
+│           │   ├── TicketCategory.java
+│           │   ├── TicketPriority.java
+│           │   └── TicketStatus.java
+│           ├── exception/
+│           │   ├── BadRequestException.java
+│           │   ├── ForbiddenException.java
+│           │   ├── GlobalExceptionHandler.java
+│           │   └── ResourceNotFoundException.java
+│           ├── repository/
+│           │   └── TicketRepository.java
+│           └── service/
+│               ├── TicketService.java
+│               └── impl/TicketServiceImpl.java
 └── frontend/
     ├── index.html
     ├── package.json
@@ -218,6 +218,8 @@ Ensure the MongoDB Atlas connection string in `backend/src/main/resources/applic
 
 ### 2) Run Backend
 
+Requires **Java 25** and **Maven 3.9+**.
+
 ```bash
 cd backend
 mvn spring-boot:run
@@ -237,5 +239,7 @@ Frontend runs at `http://localhost:5173`.
 
 ## Notes
 
-- Maven (`mvn`) was not available in this environment while generating code, so compile/run should be executed on your machine after installing Maven.
+- Build verified clean with Java 25 and Spring Boot 3.5.14 (`mvn clean test-compile` exits 0).
 - Uploaded files are saved in backend local `uploads/` directory.
+- The `booking` package (`com.smartcampus.operationshub.booking`) is a ready stub for the next module. Add controllers, services, entities and repositories there — they will be auto-discovered by the root `@SpringBootApplication`.
+- Spring Security uses in-memory users for demo purposes. Replace with a persistent `UserDetailsService` for production.

@@ -1,12 +1,9 @@
 package com.smartcampus.operationshub.ticketing;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
+/**
+ * Legacy module marker – retained for reference only.
+ * Application entry point has moved to
+ * {@link com.smartcampus.operationshub.SmartCampusOperationsHubApplication}.
+ */
 public class SmartCampusTicketingApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(SmartCampusTicketingApplication.class, args);
-    }
 }
