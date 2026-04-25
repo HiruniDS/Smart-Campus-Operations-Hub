@@ -1,6 +1,7 @@
 package com.smartcampus.operationshub.booking.service;
 
 import com.smartcampus.operationshub.booking.dto.BookingApprovalRequest;
+import com.smartcampus.operationshub.booking.dto.BookingAvailabilityResponse;
 import com.smartcampus.operationshub.booking.dto.BookingCancellationRequest;
 import com.smartcampus.operationshub.booking.dto.BookingCreateRequest;
 import com.smartcampus.operationshub.booking.dto.BookingRejectionRequest;
@@ -12,6 +13,8 @@ import java.util.List;
 public interface BookingService {
 
     BookingResponse createBookingRequest(BookingCreateRequest request, String username);
+
+        BookingAvailabilityResponse getAvailability(String resourceId, LocalDate bookingDate);
 
     List<BookingResponse> getOwnBookings(String username);
 

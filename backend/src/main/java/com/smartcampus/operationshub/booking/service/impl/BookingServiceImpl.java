@@ -1,8 +1,10 @@
 package com.smartcampus.operationshub.booking.service.impl;
 
 import com.smartcampus.operationshub.booking.dto.BookingApprovalRequest;
+import com.smartcampus.operationshub.booking.dto.BookingAvailabilityResponse;
 import com.smartcampus.operationshub.booking.dto.BookingCancellationRequest;
 import com.smartcampus.operationshub.booking.dto.BookingCreateRequest;
+import com.smartcampus.operationshub.booking.dto.OccupiedTimeSlotResponse;
 import com.smartcampus.operationshub.booking.dto.BookingRejectionRequest;
 import com.smartcampus.operationshub.booking.dto.BookingResponse;
 import com.smartcampus.operationshub.booking.entity.Booking;
@@ -66,6 +68,39 @@ public class BookingServiceImpl implements BookingService {
         booking.setUpdatedAt(LocalDateTime.now());
 
         return toResponse(bookingRepository.save(booking));
+    }
+
+    @Override
+    public BookingAvailabilityResponse getAvailability(String resourceId, LocalDate bookingDate) {
+        if (resourceId == null || resourceId.isBlank()) {
+            throw new BadRequestException("Resource ID is required");
+        }
+
+        if (bookingDate == null) {
+            throw new BadRequestException("Booking date is required");
+        }
+
+        List<BookingStatus> activeStatuses = List.of(BookingStatus.PENDING, BookingStatus.APPROVED);
+        List<OccupiedTimeSlotResponse> occupiedSlots = bookingRepository
+                .findByResourceIdAndBookingDateAndStatusIn(resourceId, bookingDate, activeStatuses)
+                .stream()
+                .map(this::toOccupiedSlot)
+                .sorted((a, b) -> a.getStartTime().compareTo(b.getStartTime()))
+                .toList();
+
+        BookingAvailabilityResponse response = new BookingAvailabilityResponse();
+        response.setResourceId(resourceId);
+        response.setBookingDate(bookingDate);
+        response.setOccupiedSlots(occupiedSlots);
+        response.setAvailable(occupiedSlots.isEmpty());
+
+        if (occupiedSlots.isEmpty()) {
+            response.setSummary("Resource is fully available on selected date");
+        } else {
+            response.setSummary("Resource has " + occupiedSlots.size() + " occupied slot(s) on selected date");
+        }
+
+        return response;
     }
 
     // -------------------------------------------------------------------------
@@ -279,6 +314,14 @@ public class BookingServiceImpl implements BookingService {
         response.setCancelledBy(booking.getCancelledBy());
         response.setCancelledAt(booking.getCancelledAt());
         response.setCancellationReason(booking.getCancellationReason());
+        return response;
+    }
+
+    private OccupiedTimeSlotResponse toOccupiedSlot(Booking booking) {
+        OccupiedTimeSlotResponse response = new OccupiedTimeSlotResponse();
+        response.setStartTime(booking.getStartTime());
+        response.setEndTime(booking.getEndTime());
+        response.setStatus(booking.getStatus());
         return response;
     }
 }

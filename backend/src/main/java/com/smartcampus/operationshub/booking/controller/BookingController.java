@@ -1,6 +1,7 @@
 package com.smartcampus.operationshub.booking.controller;
 
 import com.smartcampus.operationshub.booking.dto.BookingApprovalRequest;
+import com.smartcampus.operationshub.booking.dto.BookingAvailabilityResponse;
 import com.smartcampus.operationshub.booking.dto.BookingCancellationRequest;
 import com.smartcampus.operationshub.booking.dto.BookingCreateRequest;
 import com.smartcampus.operationshub.booking.dto.BookingRejectionRequest;
@@ -41,6 +42,14 @@ public class BookingController {
             Authentication authentication) {
         BookingResponse created = bookingService.createBookingRequest(request, authentication.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @GetMapping("/availability")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    public ResponseEntity<BookingAvailabilityResponse> getAvailability(
+            @RequestParam String resourceId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate bookingDate) {
+        return ResponseEntity.ok(bookingService.getAvailability(resourceId, bookingDate));
     }
 
     @GetMapping("/me")
