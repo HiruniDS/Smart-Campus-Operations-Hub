@@ -7,6 +7,7 @@ import BookingFilterBar from '../../components/booking/BookingFilterBar';
 import BookingSummaryCards from '../../components/booking/BookingSummaryCards';
 import { ApprovalModal, RejectionModal } from '../../components/booking/BookingActionModals';
 import { LoadingState, EmptyState, ErrorState } from '../../components/booking/BookingStates';
+import { BkBtn, BkCard, BkServerError } from '../../components/booking/BkUI';
 
 export default function AdminBookingReviewPage() {
     const { currentUser } = useAuth();
@@ -85,58 +86,52 @@ export default function AdminBookingReviewPage() {
         if (booking.status !== 'PENDING') return null;
         return (
             <>
-                <button
-                    className="bk-btn bk-btn-success bk-btn-xs"
-                    onClick={(e) => { e.preventDefault(); setApproveTarget(booking.id); }}
-                >
+                <BkBtn variant="success" size="xs" onClick={(e) => { e.preventDefault(); setApproveTarget(booking.id); }}>
                     Approve
-                </button>
-                <button
-                    className="bk-btn bk-btn-danger bk-btn-xs"
-                    onClick={(e) => { e.preventDefault(); setRejectTarget(booking.id); }}
-                >
+                </BkBtn>
+                <BkBtn variant="danger" size="xs" onClick={(e) => { e.preventDefault(); setRejectTarget(booking.id); }}>
                     Reject
-                </button>
+                </BkBtn>
             </>
         );
     };
 
     return (
-        <div className="bk-page">
+        <div className="flex flex-col gap-6 pb-12">
             {toast && (
-                <div className="bk-toast">
+                <div className="fixed bottom-8 right-8 bg-slate-900 text-white px-5 py-3.5 rounded-xl text-sm font-medium shadow-2xl z-50 animate-[bk-slide-up_0.25s_ease]">
                     ✅ {toast}
                 </div>
             )}
 
-            <div className="bk-page-header">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
-                    <h1 className="bk-page-title">Admin — Booking Review</h1>
-                    <p className="bk-page-subtitle">
+                    <h1 className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">Admin — Booking Review</h1>
+                    <p className="text-slate-500 text-sm">
                         Review and process all campus resource booking requests.
                     </p>
                 </div>
-                <div className="bk-page-actions">
-                    <button className="bk-btn bk-btn-outline" onClick={load}>↻ Refresh</button>
+                <div className="flex gap-2 items-center shrink-0">
+                    <BkBtn variant="outline" onClick={load}>↻ Refresh</BkBtn>
                 </div>
             </div>
 
             {!loading && !error && <BookingSummaryCards bookings={bookings} />}
 
-            <div className="bk-card">
+            <BkCard className="p-5">
                 <BookingFilterBar filters={filters} onChange={setFilters} showRequesterFilter />
-            </div>
+            </BkCard>
 
-            {error && <div className="bk-server-error"><strong>⚠ {error}</strong></div>}
+            <BkServerError message={error} />
 
             {loading && <LoadingState message="Fetching all bookings…" />}
             {!loading && !error && bookings.length === 0 && (
                 <EmptyState message="No bookings match the current filters." icon="📋" />
             )}
             {!loading && !error && bookings.length > 0 && (
-                <div className="bk-card bk-card-table">
+                <BkCard className="overflow-hidden">
                     <BookingTable bookings={bookings} actions={adminActions} />
-                </div>
+                </BkCard>
             )}
 
             {approveTarget && (

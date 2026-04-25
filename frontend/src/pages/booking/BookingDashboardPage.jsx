@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import BookingSummaryCards from '../../components/booking/BookingSummaryCards';
 import BookingStatusBadge from '../../components/booking/BookingStatusBadge';
 import { LoadingState, ErrorState } from '../../components/booking/BookingStates';
+import { BkCard, btnCls } from '../../components/booking/BkUI';
 
 export default function BookingDashboardPage() {
     const { currentUser } = useAuth();
@@ -34,24 +35,24 @@ export default function BookingDashboardPage() {
         .slice(0, 5);
 
     return (
-        <div className="bk-page">
-            <div className="bk-page-header">
+        <div className="flex flex-col gap-6 pb-12">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
-                    <h1 className="bk-page-title">Booking Dashboard</h1>
-                    <p className="bk-page-subtitle">
+                    <h1 className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">Booking Dashboard</h1>
+                    <p className="text-slate-500 text-sm">
                         {isAdmin
                             ? 'Manage all campus resource bookings across the system.'
-                            : `Welcome back, ${currentUser.username}. Here's an overview of your bookings.`}
+                            : `Welcome back, ${currentUser.username}. Here’s an overview of your bookings.`}
                     </p>
                 </div>
-                <div className="bk-page-actions">
+                <div className="flex gap-2 items-center shrink-0">
                     {!isAdmin && (
-                        <Link to="/bookings/new" className="bk-btn bk-btn-primary">
+                        <Link to="/bookings/new" className={btnCls('primary')}>
                             + New Booking
                         </Link>
                     )}
                     {isAdmin && (
-                        <Link to="/bookings/admin" className="bk-btn bk-btn-primary">
+                        <Link to="/bookings/admin" className={btnCls('primary')}>
                             Review All Bookings
                         </Link>
                     )}
@@ -65,72 +66,77 @@ export default function BookingDashboardPage() {
                 <>
                     <BookingSummaryCards bookings={bookings} />
 
-                    <div className="bk-dashboard-grid">
-                        <div className="bk-card">
-                            <div className="bk-card-header">
-                                <h3 className="bk-card-title">Recent Bookings</h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-5">
+                        {/* Recent Bookings */}
+                        <BkCard className="p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-base font-semibold text-slate-800 m-0">Recent Bookings</h3>
                                 <Link
                                     to={isAdmin ? '/bookings/admin' : '/bookings/me'}
-                                    className="bk-link"
+                                    className="text-blue-500 text-sm hover:underline"
                                 >
                                     View all →
                                 </Link>
                             </div>
                             {recent.length === 0 ? (
-                                <p className="bk-empty-inline">No bookings yet.</p>
+                                <p className="text-slate-400 text-sm text-center py-6">No bookings yet.</p>
                             ) : (
-                                <div className="bk-recent-list">
+                                <div className="flex flex-col gap-2">
                                     {recent.map((b) => (
-                                        <Link key={b.id} to={`/bookings/${b.id}`} className="bk-recent-item">
-                                            <div className="bk-recent-main">
-                                                <span className="bk-recent-resource">{b.resourceName}</span>
-                                                <span className="bk-recent-meta">{b.bookingDate} · {b.startTime}–{b.endTime}</span>
+                                        <Link
+                                            key={b.id}
+                                            to={`/bookings/${b.id}`}
+                                            className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-slate-100 bg-slate-50 hover:bg-slate-100 no-underline transition-colors"
+                                        >
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="font-semibold text-slate-800 text-sm">{b.resourceName}</span>
+                                                <span className="text-xs text-slate-400 font-mono">{b.bookingDate} · {b.startTime}–{b.endTime}</span>
                                             </div>
                                             <BookingStatusBadge status={b.status} />
                                         </Link>
                                     ))}
                                 </div>
                             )}
-                        </div>
+                        </BkCard>
 
-                        <div className="bk-card">
-                            <div className="bk-card-header">
-                                <h3 className="bk-card-title">Quick Actions</h3>
-                            </div>
-                            <div className="bk-quick-actions">
+                        {/* Quick Actions */}
+                        <BkCard className="p-6">
+                            <h3 className="text-base font-semibold text-slate-800 mb-4">Quick Actions</h3>
+                            <div className="flex flex-col gap-2.5">
                                 {!isAdmin && (
                                     <>
-                                        <Link to="/bookings/new" className="bk-quick-action-btn">
-                                            <span className="bk-qa-icon">📅</span>
+                                        <Link to="/bookings/new" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-medium text-sm hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all no-underline">
+                                            <span className="text-lg w-6 text-center">📅</span>
                                             <span>Create Booking</span>
                                         </Link>
-                                        <Link to="/bookings/me" className="bk-quick-action-btn">
-                                            <span className="bk-qa-icon">📋</span>
+                                        <Link to="/bookings/me" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-medium text-sm hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all no-underline">
+                                            <span className="text-lg w-6 text-center">📋</span>
                                             <span>My Bookings</span>
                                         </Link>
-                                        <Link to="/bookings/availability" className="bk-quick-action-btn">
-                                            <span className="bk-qa-icon">🔍</span>
+                                        <Link to="/bookings/availability" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-medium text-sm hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all no-underline">
+                                            <span className="text-lg w-6 text-center">🔍</span>
                                             <span>Check Availability</span>
                                         </Link>
                                     </>
                                 )}
                                 {isAdmin && (
                                     <>
-                                        <Link to="/bookings/admin" className="bk-quick-action-btn">
-                                            <span className="bk-qa-icon">🛠</span>
+                                        <Link to="/bookings/admin" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-medium text-sm hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all no-underline">
+                                            <span className="text-lg w-6 text-center">🛠</span>
                                             <span>Review Requests</span>
                                         </Link>
-                                        <Link to="/bookings/availability" className="bk-quick-action-btn">
-                                            <span className="bk-qa-icon">🔍</span>
+                                        <Link to="/bookings/availability" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-medium text-sm hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all no-underline">
+                                            <span className="text-lg w-6 text-center">🔍</span>
                                             <span>Check Availability</span>
                                         </Link>
                                     </>
                                 )}
                             </div>
-                        </div>
+                        </BkCard>
                     </div>
                 </>
             )}
         </div>
     );
 }
+

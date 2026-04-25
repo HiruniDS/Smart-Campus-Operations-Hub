@@ -5,13 +5,14 @@ import { useAuth } from '../../context/AuthContext';
 import BookingStatusBadge from '../../components/booking/BookingStatusBadge';
 import { CancellationModal } from '../../components/booking/BookingActionModals';
 import { LoadingState, ErrorState } from '../../components/booking/BookingStates';
+import { BkBtn, BkCard, BkServerError, BkSuccessBanner } from '../../components/booking/BkUI';
 
 function InfoRow({ label, value }) {
     if (!value && value !== 0) return null;
     return (
-        <div className="bk-info-row">
-            <span className="bk-info-label">{label}</span>
-            <span className="bk-info-value">{value}</span>
+        <div className="flex items-baseline gap-2">
+            <span className="text-xs font-semibold uppercase tracking-widest text-slate-400 min-w-[130px] shrink-0">{label}</span>
+            <span className="text-sm text-slate-800 font-medium">{value}</span>
         </div>
     );
 }
@@ -73,77 +74,73 @@ export default function BookingDetailsPage() {
     const canCancel = booking && (booking.status === 'PENDING' || booking.status === 'APPROVED');
     const canDelete = booking && booking.status === 'PENDING' && booking.requestedBy === currentUser.username;
 
-    if (loading) return <div className="bk-page"><LoadingState message="Loading booking details…" /></div>;
-    if (error) return <div className="bk-page"><ErrorState message={error} onRetry={load} /></div>;
+    if (loading) return <div className="flex flex-col gap-6 pb-12"><LoadingState message="Loading booking details…" /></div>;
+    if (error) return <div className="flex flex-col gap-6 pb-12"><ErrorState message={error} onRetry={load} /></div>;
     if (!booking) return null;
 
     return (
-        <div className="bk-page">
-            <div className="bk-page-header">
+        <div className="flex flex-col gap-6 pb-12">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
-                    <div className="bk-breadcrumb">
-                        <Link to="/bookings" className="bk-breadcrumb-link">Dashboard</Link>
-                        <span className="bk-breadcrumb-sep">›</span>
-                        <Link to={isAdmin ? '/bookings/admin' : '/bookings/me'} className="bk-breadcrumb-link">
+                    <nav className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                        <Link to="/bookings" className="text-blue-500 hover:underline">Dashboard</Link>
+                        <span className="text-slate-300">›</span>
+                        <Link to={isAdmin ? '/bookings/admin' : '/bookings/me'} className="text-blue-500 hover:underline">
                             {isAdmin ? 'All Bookings' : 'My Bookings'}
                         </Link>
-                        <span className="bk-breadcrumb-sep">›</span>
+                        <span className="text-slate-300">›</span>
                         <span>Details</span>
-                    </div>
-                    <h1 className="bk-page-title">{booking.resourceName}</h1>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.4rem' }}>
+                    </nav>
+                    <h1 className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">{booking.resourceName}</h1>
+                    <div className="flex items-center gap-3 mt-1">
                         <BookingStatusBadge status={booking.status} />
-                        <span className="bk-page-subtitle" style={{ margin: 0 }}>
+                        <span className="text-slate-500 text-sm">
                             Requested by <strong>{booking.requestedBy}</strong>
                         </span>
                     </div>
                 </div>
-                <div className="bk-page-actions">
+                <div className="flex gap-2 items-center shrink-0">
                     {canCancel && (
-                        <button className="bk-btn bk-btn-danger" onClick={() => setShowCancelModal(true)}>
-                            Cancel Booking
-                        </button>
+                        <BkBtn variant="danger" onClick={() => setShowCancelModal(true)}>Cancel Booking</BkBtn>
                     )}
                     {canDelete && (
-                        <button className="bk-btn bk-btn-ghost" onClick={handleDelete}>
-                            Delete Request
-                        </button>
+                        <BkBtn variant="ghost" onClick={handleDelete}>Delete Request</BkBtn>
                     )}
                 </div>
             </div>
 
-            {successMsg && <div className="bk-success-banner"><span>✅</span><strong>{successMsg}</strong></div>}
-            {actionError && <div className="bk-server-error"><strong>⚠ {actionError}</strong></div>}
+            {successMsg && <BkSuccessBanner icon="✅">{successMsg}</BkSuccessBanner>}
+            <BkServerError message={actionError} />
 
-            <div className="bk-details-grid">
-                <div className="bk-card">
-                    <h3 className="bk-card-title">Resource Information</h3>
-                    <div className="bk-info-list">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <BkCard className="p-6">
+                    <h3 className="text-base font-semibold text-slate-800 mb-4">Resource Information</h3>
+                    <div className="flex flex-col gap-3">
                         <InfoRow label="Resource ID" value={booking.resourceId} />
                         <InfoRow label="Resource Name" value={booking.resourceName} />
                         <InfoRow label="Type" value={booking.resourceType?.replace(/_/g, ' ')} />
                         <InfoRow label="Location" value={booking.location} />
                     </div>
-                </div>
+                </BkCard>
 
-                <div className="bk-card">
-                    <h3 className="bk-card-title">Schedule</h3>
-                    <div className="bk-info-list">
+                <BkCard className="p-6">
+                    <h3 className="text-base font-semibold text-slate-800 mb-4">Schedule</h3>
+                    <div className="flex flex-col gap-3">
                         <InfoRow label="Booking Date" value={booking.bookingDate} />
                         <InfoRow label="Start Time" value={booking.startTime} />
                         <InfoRow label="End Time" value={booking.endTime} />
                         <InfoRow label="Expected Attendees" value={booking.expectedAttendees} />
                     </div>
-                </div>
+                </BkCard>
 
-                <div className="bk-card bk-card-full">
-                    <h3 className="bk-card-title">Purpose</h3>
-                    <p className="bk-purpose-text">{booking.purpose}</p>
-                </div>
+                <BkCard className="p-6 col-span-full">
+                    <h3 className="text-base font-semibold text-slate-800 mb-4">Purpose</h3>
+                    <p className="text-[0.95rem] text-slate-600 leading-relaxed m-0">{booking.purpose}</p>
+                </BkCard>
 
-                <div className="bk-card">
-                    <h3 className="bk-card-title">Audit Trail</h3>
-                    <div className="bk-info-list">
+                <BkCard className="p-6">
+                    <h3 className="text-base font-semibold text-slate-800 mb-4">Audit Trail</h3>
+                    <div className="flex flex-col gap-3">
                         <InfoRow label="Created At" value={booking.createdAt ? new Date(booking.createdAt).toLocaleString() : null} />
                         <InfoRow label="Updated At" value={booking.updatedAt ? new Date(booking.updatedAt).toLocaleString() : null} />
                         {booking.reviewedBy && <InfoRow label="Reviewed By" value={booking.reviewedBy} />}
@@ -153,7 +150,7 @@ export default function BookingDetailsPage() {
                         {booking.cancelledAt && <InfoRow label="Cancelled At" value={new Date(booking.cancelledAt).toLocaleString()} />}
                         {booking.cancellationReason && <InfoRow label="Cancellation Reason" value={booking.cancellationReason} />}
                     </div>
-                </div>
+                </BkCard>
             </div>
 
             {showCancelModal && (

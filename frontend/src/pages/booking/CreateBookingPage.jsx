@@ -1,26 +1,27 @@
 import { Link } from 'react-router-dom';
 import BookingForm from '../../components/booking/BookingForm';
+import { BkCard } from '../../components/booking/BkUI';
 
 export default function CreateBookingPage() {
     return (
-        <div className="bk-page">
-            <div className="bk-page-header">
+        <div className="flex flex-col gap-6 pb-12">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
-                    <div className="bk-breadcrumb">
-                        <Link to="/bookings" className="bk-breadcrumb-link">Dashboard</Link>
-                        <span className="bk-breadcrumb-sep">›</span>
+                    <nav className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                        <Link to="/bookings" className="text-blue-500 hover:underline">Dashboard</Link>
+                        <span className="text-slate-300">›</span>
                         <span>New Booking</span>
-                    </div>
-                    <h1 className="bk-page-title">Create Booking Request</h1>
-                    <p className="bk-page-subtitle">
+                    </nav>
+                    <h1 className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">Create Booking Request</h1>
+                    <p className="text-slate-500 text-sm">
                         Fill in the details below to request a campus resource. Your request will be reviewed by an administrator.
                     </p>
                 </div>
             </div>
 
-            <div className="bk-card bk-form-card">
+            <BkCard className="p-6" style={{ maxWidth: 780 }}>
                 <BookingForm />
-            </div>
+            </BkCard>
         </div>
     );
 }

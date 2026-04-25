@@ -1,35 +1,30 @@
 import { useState } from 'react';
 import BookingModal from './BookingModal';
+import { BkBtn, BkLabel, BkFieldError, inputCls } from './BkUI';
 
 export function ApprovalModal({ onConfirm, onClose, loading }) {
     const [reviewReason, setReviewReason] = useState('');
 
     return (
-        <BookingModal title="Approve Booking" onClose={onClose}>
-            <p className="bk-modal-desc">
+        <BookingModal title="✅ Approve Booking" onClose={onClose}>
+            <p className="m-0 text-slate-500 text-sm">
                 Optionally provide an approval note for the requester.
             </p>
-            <div className="bk-field">
-                <label className="bk-label">Review Note (optional)</label>
+            <div className="flex flex-col gap-1.5">
+                <BkLabel>Review Note (optional)</BkLabel>
                 <textarea
-                    className="bk-textarea"
+                    className={`${inputCls()} resize-y min-h-[72px]`}
                     rows={3}
                     value={reviewReason}
                     onChange={(e) => setReviewReason(e.target.value)}
                     placeholder="e.g. Approved – room is available and request looks valid."
                 />
             </div>
-            <div className="bk-modal-actions">
-                <button className="bk-btn bk-btn-ghost" onClick={onClose} disabled={loading}>
-                    Cancel
-                </button>
-                <button
-                    className="bk-btn bk-btn-success"
-                    onClick={() => onConfirm(reviewReason)}
-                    disabled={loading}
-                >
+            <div className="flex justify-end gap-2.5">
+                <BkBtn variant="ghost" onClick={onClose} disabled={loading}>Cancel</BkBtn>
+                <BkBtn variant="success" onClick={() => onConfirm(reviewReason)} disabled={loading}>
                     {loading ? 'Approving…' : 'Approve Booking'}
-                </button>
+                </BkBtn>
             </div>
         </BookingModal>
     );
@@ -48,32 +43,26 @@ export function RejectionModal({ onConfirm, onClose, loading }) {
     };
 
     return (
-        <BookingModal title="Reject Booking" onClose={onClose}>
-            <p className="bk-modal-desc">
+        <BookingModal title="❌ Reject Booking" onClose={onClose}>
+            <p className="m-0 text-slate-500 text-sm">
                 Please provide a reason for rejecting this booking request.
             </p>
-            <div className="bk-field">
-                <label className="bk-label">Reason <span className="bk-required">*</span></label>
+            <div className="flex flex-col gap-1.5">
+                <BkLabel required>Reason</BkLabel>
                 <textarea
-                    className={`bk-textarea ${error ? 'bk-input-error' : ''}`}
+                    className={`${inputCls(!!error)} resize-y min-h-[72px]`}
                     rows={3}
                     value={reason}
                     onChange={(e) => { setReason(e.target.value); setError(''); }}
                     placeholder="e.g. The room is unavailable due to maintenance."
                 />
-                {error && <span className="bk-field-error">{error}</span>}
+                <BkFieldError message={error} />
             </div>
-            <div className="bk-modal-actions">
-                <button className="bk-btn bk-btn-ghost" onClick={onClose} disabled={loading}>
-                    Cancel
-                </button>
-                <button
-                    className="bk-btn bk-btn-danger"
-                    onClick={handleSubmit}
-                    disabled={loading}
-                >
+            <div className="flex justify-end gap-2.5">
+                <BkBtn variant="ghost" onClick={onClose} disabled={loading}>Cancel</BkBtn>
+                <BkBtn variant="danger" onClick={handleSubmit} disabled={loading}>
                     {loading ? 'Rejecting…' : 'Reject Booking'}
-                </button>
+                </BkBtn>
             </div>
         </BookingModal>
     );
@@ -92,32 +81,26 @@ export function CancellationModal({ onConfirm, onClose, loading }) {
     };
 
     return (
-        <BookingModal title="Cancel Booking" onClose={onClose}>
-            <p className="bk-modal-desc">
+        <BookingModal title="🚫 Cancel Booking" onClose={onClose}>
+            <p className="m-0 text-slate-500 text-sm">
                 Are you sure you want to cancel this booking? This action cannot be undone.
             </p>
-            <div className="bk-field">
-                <label className="bk-label">Reason <span className="bk-required">*</span></label>
+            <div className="flex flex-col gap-1.5">
+                <BkLabel required>Reason</BkLabel>
                 <textarea
-                    className={`bk-textarea ${error ? 'bk-input-error' : ''}`}
+                    className={`${inputCls(!!error)} resize-y min-h-[72px]`}
                     rows={3}
                     value={reason}
                     onChange={(e) => { setReason(e.target.value); setError(''); }}
                     placeholder="e.g. Plans have changed and the room is no longer needed."
                 />
-                {error && <span className="bk-field-error">{error}</span>}
+                <BkFieldError message={error} />
             </div>
-            <div className="bk-modal-actions">
-                <button className="bk-btn bk-btn-ghost" onClick={onClose} disabled={loading}>
-                    Keep Booking
-                </button>
-                <button
-                    className="bk-btn bk-btn-danger"
-                    onClick={handleSubmit}
-                    disabled={loading}
-                >
+            <div className="flex justify-end gap-2.5">
+                <BkBtn variant="ghost" onClick={onClose} disabled={loading}>Keep Booking</BkBtn>
+                <BkBtn variant="danger" onClick={handleSubmit} disabled={loading}>
                     {loading ? 'Cancelling…' : 'Cancel Booking'}
-                </button>
+                </BkBtn>
             </div>
         </BookingModal>
     );

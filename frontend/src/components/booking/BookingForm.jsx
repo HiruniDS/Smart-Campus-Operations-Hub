@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createBooking } from '../../api/bookingApi';
 import AvailabilityPanel from './AvailabilityPanel';
+import { BkBtn, BkLabel, BkFieldError, BkServerError, BkSuccessBanner, inputCls } from './BkUI';
 
 const RESOURCE_TYPES = ['LECTURE_HALL', 'LAB', 'SEMINAR_ROOM', 'SPORTS_FACILITY', 'STUDY_ROOM', 'OTHER'];
 
@@ -33,6 +34,12 @@ function validate(form) {
         errors.expectedAttendees = 'Expected attendees must be at least 1.';
     return errors;
 }
+
+const SECTION = 'py-5 border-b border-slate-100 last:border-b-0 flex flex-col gap-4';
+const SECTION_TITLE = 'text-xs font-bold uppercase tracking-widest text-slate-400';
+const ROW2 = 'grid grid-cols-1 sm:grid-cols-2 gap-4';
+const ROW3 = 'grid grid-cols-1 sm:grid-cols-3 gap-4';
+const FIELD = 'flex flex-col gap-1.5';
 
 export default function BookingForm() {
     const navigate = useNavigate();
@@ -69,53 +76,47 @@ export default function BookingForm() {
 
     if (success) {
         return (
-            <div className="bk-success-banner">
-                <span>🎉</span>
-                <div>
-                    <strong>Booking request submitted!</strong>
-                    <p>Redirecting to your booking details…</p>
-                </div>
-            </div>
+            <BkSuccessBanner icon="🎉">
+                <strong>Booking request submitted!</strong>
+                <p className="text-xs opacity-80 m-0 mt-0.5">Redirecting to your booking details…</p>
+            </BkSuccessBanner>
         );
     }
 
     return (
-        <form className="bk-form" onSubmit={handleSubmit} noValidate>
-            {serverError && (
-                <div className="bk-server-error">
-                    <strong>⚠ {serverError}</strong>
-                </div>
-            )}
+        <form className="flex flex-col" onSubmit={handleSubmit} noValidate>
+            <BkServerError message={serverError} />
 
-            <div className="bk-form-section">
-                <h4 className="bk-form-section-title">Resource Information</h4>
-                <div className="bk-row">
-                    <div className="bk-field">
-                        <label className="bk-label">Resource ID <span className="bk-required">*</span></label>
+            {/* ── Resource Information ─────────────────────────────────── */}
+            <div className={SECTION}>
+                <h4 className={SECTION_TITLE}>Resource Information</h4>
+                <div className={ROW2}>
+                    <div className={FIELD}>
+                        <BkLabel required>Resource ID</BkLabel>
                         <input
-                            className={`bk-input ${errors.resourceId ? 'bk-input-error' : ''}`}
+                            className={inputCls(!!errors.resourceId)}
                             value={form.resourceId}
                             onChange={(e) => set('resourceId', e.target.value)}
                             placeholder="e.g. HALL-A1"
                         />
-                        {errors.resourceId && <span className="bk-field-error">{errors.resourceId}</span>}
+                        <BkFieldError message={errors.resourceId} />
                     </div>
-                    <div className="bk-field">
-                        <label className="bk-label">Resource Name <span className="bk-required">*</span></label>
+                    <div className={FIELD}>
+                        <BkLabel required>Resource Name</BkLabel>
                         <input
-                            className={`bk-input ${errors.resourceName ? 'bk-input-error' : ''}`}
+                            className={inputCls(!!errors.resourceName)}
                             value={form.resourceName}
                             onChange={(e) => set('resourceName', e.target.value)}
                             placeholder="e.g. Engineering Lecture Hall A"
                         />
-                        {errors.resourceName && <span className="bk-field-error">{errors.resourceName}</span>}
+                        <BkFieldError message={errors.resourceName} />
                     </div>
                 </div>
-                <div className="bk-row">
-                    <div className="bk-field">
-                        <label className="bk-label">Resource Type <span className="bk-required">*</span></label>
+                <div className={ROW2}>
+                    <div className={FIELD}>
+                        <BkLabel required>Resource Type</BkLabel>
                         <select
-                            className={`bk-select ${errors.resourceType ? 'bk-input-error' : ''}`}
+                            className={inputCls(!!errors.resourceType)}
                             value={form.resourceType}
                             onChange={(e) => set('resourceType', e.target.value)}
                         >
@@ -124,112 +125,113 @@ export default function BookingForm() {
                                 <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
                             ))}
                         </select>
-                        {errors.resourceType && <span className="bk-field-error">{errors.resourceType}</span>}
+                        <BkFieldError message={errors.resourceType} />
                     </div>
-                    <div className="bk-field">
-                        <label className="bk-label">Location <span className="bk-required">*</span></label>
+                    <div className={FIELD}>
+                        <BkLabel required>Location</BkLabel>
                         <input
-                            className={`bk-input ${errors.location ? 'bk-input-error' : ''}`}
+                            className={inputCls(!!errors.location)}
                             value={form.location}
                             onChange={(e) => set('location', e.target.value)}
                             placeholder="e.g. Block C, Floor 2"
                         />
-                        {errors.location && <span className="bk-field-error">{errors.location}</span>}
+                        <BkFieldError message={errors.location} />
                     </div>
                 </div>
             </div>
 
-            <div className="bk-form-section">
-                <h4 className="bk-form-section-title">Schedule</h4>
-                <div className="bk-row bk-row-3">
-                    <div className="bk-field">
-                        <label className="bk-label">Date <span className="bk-required">*</span></label>
+            {/* ── Schedule ─────────────────────────────────────────────── */}
+            <div className={SECTION}>
+                <h4 className={SECTION_TITLE}>Schedule</h4>
+                <div className={ROW3}>
+                    <div className={FIELD}>
+                        <BkLabel required>Date</BkLabel>
                         <input
                             type="date"
-                            className={`bk-input ${errors.bookingDate ? 'bk-input-error' : ''}`}
+                            className={inputCls(!!errors.bookingDate)}
                             value={form.bookingDate}
                             min={new Date().toISOString().split('T')[0]}
                             onChange={(e) => set('bookingDate', e.target.value)}
                         />
-                        {errors.bookingDate && <span className="bk-field-error">{errors.bookingDate}</span>}
+                        <BkFieldError message={errors.bookingDate} />
                     </div>
-                    <div className="bk-field">
-                        <label className="bk-label">Start Time <span className="bk-required">*</span></label>
+                    <div className={FIELD}>
+                        <BkLabel required>Start Time</BkLabel>
                         <input
                             type="time"
-                            className={`bk-input ${errors.startTime ? 'bk-input-error' : ''}`}
+                            className={inputCls(!!errors.startTime)}
                             value={form.startTime}
                             onChange={(e) => set('startTime', e.target.value)}
                         />
-                        {errors.startTime && <span className="bk-field-error">{errors.startTime}</span>}
+                        <BkFieldError message={errors.startTime} />
                     </div>
-                    <div className="bk-field">
-                        <label className="bk-label">End Time <span className="bk-required">*</span></label>
+                    <div className={FIELD}>
+                        <BkLabel required>End Time</BkLabel>
                         <input
                             type="time"
-                            className={`bk-input ${errors.endTime ? 'bk-input-error' : ''}`}
+                            className={inputCls(!!errors.endTime)}
                             value={form.endTime}
                             onChange={(e) => set('endTime', e.target.value)}
                         />
-                        {errors.endTime && <span className="bk-field-error">{errors.endTime}</span>}
+                        <BkFieldError message={errors.endTime} />
                     </div>
                 </div>
 
-                <div className="bk-avail-toggle-row">
-                    <button
+                <div className="flex items-center gap-3 mt-1">
+                    <BkBtn
                         type="button"
-                        className="bk-btn bk-btn-outline bk-btn-sm"
+                        variant="outline"
+                        size="sm"
                         onClick={() => setShowAvail((v) => !v)}
                     >
                         {showAvail ? 'Hide' : 'Check'} Availability
-                    </button>
-                    {!form.resourceId && <span className="bk-avail-hint">Enter a Resource ID above first.</span>}
+                    </BkBtn>
+                    {!form.resourceId && (
+                        <span className="text-xs text-slate-400">Enter a Resource ID above first.</span>
+                    )}
                 </div>
 
                 {showAvail && (
-                    <AvailabilityPanel
-                        resourceId={form.resourceId}
-                        bookingDate={form.bookingDate}
-                    />
+                    <AvailabilityPanel resourceId={form.resourceId} bookingDate={form.bookingDate} />
                 )}
             </div>
 
-            <div className="bk-form-section">
-                <h4 className="bk-form-section-title">Details</h4>
-                <div className="bk-field">
-                    <label className="bk-label">Purpose <span className="bk-required">*</span></label>
+            {/* ── Details ──────────────────────────────────────────────── */}
+            <div className={SECTION}>
+                <h4 className={SECTION_TITLE}>Details</h4>
+                <div className={FIELD}>
+                    <BkLabel required>Purpose</BkLabel>
                     <textarea
-                        className={`bk-textarea ${errors.purpose ? 'bk-input-error' : ''}`}
+                        className={`${inputCls(!!errors.purpose)} resize-y min-h-[80px]`}
                         rows={3}
                         value={form.purpose}
                         onChange={(e) => set('purpose', e.target.value)}
                         placeholder="Describe the purpose of this booking…"
                     />
-                    {errors.purpose && <span className="bk-field-error">{errors.purpose}</span>}
+                    <BkFieldError message={errors.purpose} />
                 </div>
-                <div className="bk-field" style={{ maxWidth: 200 }}>
-                    <label className="bk-label">Expected Attendees <span className="bk-required">*</span></label>
+                <div className={FIELD} style={{ maxWidth: 200 }}>
+                    <BkLabel required>Expected Attendees</BkLabel>
                     <input
                         type="number"
                         min={1}
-                        className={`bk-input ${errors.expectedAttendees ? 'bk-input-error' : ''}`}
+                        className={inputCls(!!errors.expectedAttendees)}
                         value={form.expectedAttendees}
                         onChange={(e) => set('expectedAttendees', e.target.value)}
                         placeholder="e.g. 30"
                     />
-                    {errors.expectedAttendees && (
-                        <span className="bk-field-error">{errors.expectedAttendees}</span>
-                    )}
+                    <BkFieldError message={errors.expectedAttendees} />
                 </div>
             </div>
 
-            <div className="bk-form-footer">
-                <button type="button" className="bk-btn bk-btn-ghost" onClick={() => navigate(-1)}>
+            {/* ── Footer ───────────────────────────────────────────────── */}
+            <div className="flex justify-end gap-3 pt-5">
+                <BkBtn type="button" variant="ghost" onClick={() => navigate(-1)}>
                     Cancel
-                </button>
-                <button type="submit" className="bk-btn bk-btn-primary" disabled={submitting}>
+                </BkBtn>
+                <BkBtn type="submit" variant="primary" disabled={submitting}>
                     {submitting ? 'Submitting…' : 'Submit Booking Request'}
-                </button>
+                </BkBtn>
             </div>
         </form>
     );

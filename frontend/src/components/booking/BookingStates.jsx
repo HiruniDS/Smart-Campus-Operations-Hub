@@ -1,28 +1,30 @@
-export function LoadingState({ message = 'Loading...' }) {
+import { btnCls } from './BkUI';
+
+export function LoadingState({ message = 'Loading…' }) {
     return (
-        <div className="bk-state-box">
-            <div className="bk-spinner" />
-            <p className="bk-state-text">{message}</p>
+        <div className="flex flex-col items-center gap-3 py-12 text-center">
+            <div className="w-9 h-9 border-[3px] border-slate-200 border-t-blue-500 rounded-full animate-spin" />
+            <p className="text-slate-500 text-sm m-0">{message}</p>
         </div>
     );
 }
 
 export function EmptyState({ message = 'No bookings found.', icon = '📭' }) {
     return (
-        <div className="bk-state-box">
-            <div className="bk-state-icon">{icon}</div>
-            <p className="bk-state-text">{message}</p>
+        <div className="flex flex-col items-center gap-3 py-12 text-center">
+            <div className="text-4xl">{icon}</div>
+            <p className="text-slate-500 text-sm m-0">{message}</p>
         </div>
     );
 }
 
 export function ErrorState({ message = 'Something went wrong.', onRetry }) {
     return (
-        <div className="bk-state-box bk-state-error">
-            <div className="bk-state-icon">⚠️</div>
-            <p className="bk-state-text">{message}</p>
+        <div className="flex flex-col items-center gap-3 py-12 text-center">
+            <div className="text-4xl">⚠️</div>
+            <p className="text-red-600 text-sm m-0">{message}</p>
             {onRetry && (
-                <button className="bk-btn bk-btn-outline" onClick={onRetry}>
+                <button className={btnCls('outline', 'sm')} onClick={onRetry}>
                     Try Again
                 </button>
             )}

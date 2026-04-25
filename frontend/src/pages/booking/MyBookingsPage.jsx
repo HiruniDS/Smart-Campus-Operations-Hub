@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import BookingStatusBadge from '../../components/booking/BookingStatusBadge';
 import BookingFilterBar from '../../components/booking/BookingFilterBar';
 import { LoadingState, EmptyState, ErrorState } from '../../components/booking/BookingStates';
+import { BkCard, btnCls } from '../../components/booking/BkUI';
 
 export default function MyBookingsPage() {
     const { currentUser } = useAuth();
@@ -36,25 +37,25 @@ export default function MyBookingsPage() {
     });
 
     return (
-        <div className="bk-page">
-            <div className="bk-page-header">
+        <div className="flex flex-col gap-6 pb-12">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
-                    <div className="bk-breadcrumb">
-                        <Link to="/bookings" className="bk-breadcrumb-link">Dashboard</Link>
-                        <span className="bk-breadcrumb-sep">›</span>
+                    <nav className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                        <Link to="/bookings" className="text-blue-500 hover:underline">Dashboard</Link>
+                        <span className="text-slate-300">›</span>
                         <span>My Bookings</span>
-                    </div>
-                    <h1 className="bk-page-title">My Bookings</h1>
-                    <p className="bk-page-subtitle">All booking requests submitted by you.</p>
+                    </nav>
+                    <h1 className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">My Bookings</h1>
+                    <p className="text-slate-500 text-sm">All booking requests submitted by you.</p>
                 </div>
-                <div className="bk-page-actions">
-                    <Link to="/bookings/new" className="bk-btn bk-btn-primary">+ New Booking</Link>
+                <div className="flex gap-2 items-center shrink-0">
+                    <Link to="/bookings/new" className={btnCls('primary')}>+ New Booking</Link>
                 </div>
             </div>
 
-            <div className="bk-card">
+            <BkCard className="p-5">
                 <BookingFilterBar filters={filters} onChange={setFilters} />
-            </div>
+            </BkCard>
 
             {loading && <LoadingState message="Loading your bookings…" />}
             {!loading && error && <ErrorState message={error} onRetry={load} />}
@@ -63,27 +64,31 @@ export default function MyBookingsPage() {
             )}
 
             {!loading && !error && filtered.length > 0 && (
-                <div className="bk-booking-grid">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                     {filtered.map((b) => (
-                        <Link key={b.id} to={`/bookings/${b.id}`} className="bk-booking-card">
-                            <div className="bk-booking-card-top">
-                                <div className="bk-booking-card-resource">
-                                    <span className="bk-booking-card-name">{b.resourceName}</span>
-                                    <span className="bk-booking-card-type">{b.resourceType?.replace(/_/g, ' ')}</span>
+                        <Link
+                            key={b.id}
+                            to={`/bookings/${b.id}`}
+                            className="bg-white border border-slate-200 rounded-xl p-5 no-underline flex flex-col gap-3 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all"
+                        >
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="flex flex-col gap-0.5">
+                                    <span className="font-bold text-slate-900">{b.resourceName}</span>
+                                    <span className="text-xs text-slate-400 uppercase tracking-wider">{b.resourceType?.replace(/_/g, ' ')}</span>
                                 </div>
                                 <BookingStatusBadge status={b.status} />
                             </div>
-                            <div className="bk-booking-card-body">
-                                <div className="bk-booking-card-meta">
+                            <div className="flex flex-col gap-2">
+                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 font-mono">
                                     <span>📅 {b.bookingDate}</span>
                                     <span>🕐 {b.startTime} – {b.endTime}</span>
                                     <span>📍 {b.location}</span>
                                 </div>
-                                <p className="bk-booking-card-purpose">{b.purpose}</p>
+                                <p className="text-sm text-slate-500 line-clamp-2 m-0">{b.purpose}</p>
                             </div>
-                            <div className="bk-booking-card-footer">
-                                <span className="bk-booking-card-attendees">👥 {b.expectedAttendees} attendees</span>
-                                <span className="bk-booking-card-link">View Details →</span>
+                            <div className="flex items-center justify-between text-xs">
+                                <span className="text-slate-500">👥 {b.expectedAttendees} attendees</span>
+                                <span className="text-blue-500 font-semibold">View Details →</span>
                             </div>
                         </Link>
                     ))}
@@ -92,3 +97,4 @@ export default function MyBookingsPage() {
         </div>
     );
 }
+

@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
   --bg: #f4efe8;
   --bg-accent: radial-gradient(circle at 10% 20%, #f6d8b8 0%, transparent 35%),
@@ -222,5 +224,39 @@ button:hover {
 
   .layout {
     width: 94vw;
+  }
+}
+
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #f5f7fb;
+}
+
+/* ── Custom keyframes referenced by Tailwind animate-[] utilities ── */
+@keyframes bk-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bk-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
