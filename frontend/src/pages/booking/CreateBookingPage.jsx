@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import BookingForm from '../../components/booking/BookingForm';
 import { BkCard } from '../../components/booking/BkUI';
+import createIllustration from '../../assets/booking/booking-create-side-illustration.png';
 
 export default function CreateBookingPage() {
   return (
@@ -28,10 +29,22 @@ export default function CreateBookingPage() {
         </p>
       </div>
 
-      {/* ── Form Card ────────────────────────────────── */}
-      <BkCard className="max-w-3xl w-full">
-        <BookingForm />
-      </BkCard>
+      {/* ── Form + Side Illustration ───────────────── */}
+      <div className="flex flex-col xl:flex-row gap-8 items-start">
+        <BkCard className="max-w-3xl w-full">
+          <BookingForm />
+        </BkCard>
+        <div className="hidden xl:flex shrink-0 flex-col items-center justify-start pt-6">
+          <img
+            src={createIllustration}
+            alt="Submit a campus resource booking request"
+            width="320"
+            height="373"
+            loading="lazy"
+            className="rounded-2xl shadow-sm object-contain max-h-[520px]"
+          />
+        </div>
+      </div>
     </div>
   );
 }

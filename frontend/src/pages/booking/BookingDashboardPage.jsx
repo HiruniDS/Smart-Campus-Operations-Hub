@@ -6,6 +6,8 @@ import BookingSummaryCards from '../../components/booking/BookingSummaryCards';
 import BookingStatusBadge from '../../components/booking/BookingStatusBadge';
 import { LoadingState, ErrorState } from '../../components/booking/BookingStates';
 import { BkCard, btnCls } from '../../components/booking/BkUI';
+import dashboardHero from '../../assets/booking/booking-dashboard-hero.png';
+import dashboardEmpty from '../../assets/booking/booking-dashboard-empty-state.png';
 
 // Status accent colors (left border of recent items)
 const statusBorder = {
@@ -53,6 +55,15 @@ export default function BookingDashboardPage() {
       <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 overflow-hidden rounded-3xl bg-gradient-to-br from-white via-blue-50/40 to-white p-6 sm:p-8 shadow-sm border border-slate-100">
         {/* Subtle decorative element */}
         <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-blue-500/5 blur-3xl" />
+        {/* Hero illustration */}
+        <img
+          src={dashboardHero}
+          alt="Campus resource booking dashboard overview"
+          width="480"
+          height="210"
+          loading="eager"
+          className="absolute bottom-0 right-0 h-full w-auto max-w-[42%] object-cover object-left opacity-90 pointer-events-none select-none hidden lg:block"
+        />
 
         <div className="relative flex items-center gap-4">
           {!isAdmin && (
@@ -116,8 +127,15 @@ export default function BookingDashboardPage() {
               </div>
 
               {recent.length === 0 ? (
-                <div className="text-center py-10 text-slate-400">
-                  <div className="text-4xl mb-3 opacity-40">📅</div>
+                <div className="flex flex-col items-center gap-4 py-8 text-slate-400">
+                  <img
+                    src={dashboardEmpty}
+                    alt="No bookings yet"
+                    width="220"
+                    height="146"
+                    loading="lazy"
+                    className="opacity-80"
+                  />
                   <p className="text-sm">No bookings yet. Create one to get started.</p>
                 </div>
               ) : (

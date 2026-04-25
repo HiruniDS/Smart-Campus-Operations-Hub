@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { checkAvailability } from '../../api/bookingApi';
 import { LoadingState, ErrorState } from './BookingStates';
+import availabilityPromptImg from '../../assets/booking/booking-availability-prompt.png';
 
 const SLOT_CLS = {
   PENDING:
@@ -39,8 +40,15 @@ export default function AvailabilityPanel({ resourceId, bookingDate }) {
   // ── Prompt when missing params ──────────────────────
   if (!resourceId || !bookingDate) {
     return (
-      <div className="mt-4 p-6 bg-slate-50/80 border border-slate-200 rounded-2xl text-center">
-        <div className="text-3xl mb-2 opacity-60">🔍</div>
+      <div className="mt-4 p-6 bg-slate-50/80 border border-slate-200 rounded-2xl flex flex-col items-center gap-4 text-center">
+        <img
+          src={availabilityPromptImg}
+          alt="Enter resource ID and date to check availability"
+          width="200"
+          height="133"
+          loading="lazy"
+          className="opacity-85"
+        />
         <p className="text-sm font-medium text-slate-500">
           Enter a Resource ID and date to check availability.
         </p>
@@ -57,17 +65,17 @@ export default function AvailabilityPanel({ resourceId, bookingDate }) {
   // Determine overall availability badge
   const availabilityBadge = data.available
     ? {
-        dot: 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)] animate-pulse',
-        text: 'text-emerald-800',
-        bg: 'bg-emerald-50/80 ring-1 ring-emerald-300/80',
-        label: 'Available',
-      }
+      dot: 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)] animate-pulse',
+      text: 'text-emerald-800',
+      bg: 'bg-emerald-50/80 ring-1 ring-emerald-300/80',
+      label: 'Available',
+    }
     : {
-        dot: 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.4)]',
-        text: 'text-amber-800',
-        bg: 'bg-amber-50/80 ring-1 ring-amber-300/80',
-        label: 'Has Bookings',
-      };
+      dot: 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.4)]',
+      text: 'text-amber-800',
+      bg: 'bg-amber-50/80 ring-1 ring-amber-300/80',
+      label: 'Has Bookings',
+    };
 
   return (
     <div className="mt-4 bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">

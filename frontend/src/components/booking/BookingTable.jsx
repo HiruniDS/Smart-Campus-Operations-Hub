@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import BookingStatusBadge from './BookingStatusBadge';
 import { btnCls } from './BkUI';
+import adminEmptyImg from '../../assets/booking/booking-admin-empty-table.png';
 
 // ── Column classes ────────────────────────────────
 const TH =
@@ -27,9 +28,16 @@ export default function BookingTable({ bookings, actions }) {
           <tbody>
             {isEmpty ? (
               <tr>
-                <td colSpan={6} className="py-16 text-center">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="text-4xl opacity-60">📋</div>
+                <td colSpan={6} className="py-12 text-center">
+                  <div className="flex flex-col items-center gap-4">
+                    <img
+                      src={adminEmptyImg}
+                      alt="No bookings to display"
+                      width="220"
+                      height="146"
+                      loading="lazy"
+                      className="opacity-85"
+                    />
                     <p className="text-sm font-medium text-slate-500">No bookings to display</p>
                     <p className="text-xs text-slate-400 -mt-1">
                       Bookings will appear here once created.

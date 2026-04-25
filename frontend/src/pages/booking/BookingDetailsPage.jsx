@@ -6,6 +6,7 @@ import BookingStatusBadge from '../../components/booking/BookingStatusBadge';
 import { CancellationModal } from '../../components/booking/BookingActionModals';
 import { LoadingState, ErrorState } from '../../components/booking/BookingStates';
 import { BkBtn, BkCard, BkServerError, BkSuccessBanner } from '../../components/booking/BkUI';
+import detailsStatusHeader from '../../assets/booking/booking-details-status-header.png';
 
 // ── Status accent banner config ─────────────────────
 const STATUS_BANNER = {
@@ -160,6 +161,18 @@ export default function BookingDetailsPage() {
         <span className="text-slate-300">›</span>
         <span className="text-slate-500 font-medium">Details</span>
       </nav>
+
+      {/* ── Status lifecycle header illustration ─────── */}
+      <div className="w-full overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
+        <img
+          src={detailsStatusHeader}
+          alt="Booking lifecycle: pending, approved, rejected, cancelled"
+          width="1400"
+          height="520"
+          loading="lazy"
+          className="w-full h-32 object-cover object-center"
+        />
+      </div>
 
       {/* ── Status banner ────────────────────────────── */}
       <div

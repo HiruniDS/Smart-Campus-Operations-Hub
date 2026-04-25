@@ -1,4 +1,5 @@
 import { btnCls } from './BkUI';
+import emptyStateImg from '../../assets/booking/booking-mybookings-empty-state.png';
 
 /** Centered spinner with a gradient track and smooth spin animation */
 function Spinner() {
@@ -26,10 +27,15 @@ export function EmptyState({
   icon = '📭',
 }) {
   return (
-    <div className="flex flex-col items-center gap-5 py-14 text-center">
-      <div className="flex items-center justify-center w-20 h-20 rounded-2xl bg-slate-100/80 border border-slate-200/60 shadow-sm">
-        <span className="text-4xl">{icon}</span>
-      </div>
+    <div className="flex flex-col items-center gap-5 py-10 text-center">
+      <img
+        src={emptyStateImg}
+        alt="No bookings found"
+        width="240"
+        height="160"
+        loading="lazy"
+        className="opacity-90"
+      />
       <p className="text-sm font-medium text-slate-500 max-w-xs">{message}</p>
     </div>
   );
