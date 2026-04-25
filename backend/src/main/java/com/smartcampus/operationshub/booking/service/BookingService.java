@@ -14,7 +14,7 @@ public interface BookingService {
 
     BookingResponse createBookingRequest(BookingCreateRequest request, String username);
 
-        BookingAvailabilityResponse getAvailability(String resourceId, LocalDate bookingDate);
+    BookingAvailabilityResponse getAvailability(String resourceId, LocalDate bookingDate);
 
     List<BookingResponse> getOwnBookings(String username);
 
