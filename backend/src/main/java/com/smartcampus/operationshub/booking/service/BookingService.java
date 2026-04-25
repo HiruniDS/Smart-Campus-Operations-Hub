@@ -5,6 +5,8 @@ import com.smartcampus.operationshub.booking.dto.BookingCancellationRequest;
 import com.smartcampus.operationshub.booking.dto.BookingCreateRequest;
 import com.smartcampus.operationshub.booking.dto.BookingRejectionRequest;
 import com.smartcampus.operationshub.booking.dto.BookingResponse;
+import com.smartcampus.operationshub.booking.entity.BookingStatus;
+import java.time.LocalDate;
 import java.util.List;
 
 public interface BookingService {
@@ -15,7 +17,12 @@ public interface BookingService {
 
     BookingResponse getBookingById(String bookingId, String username, boolean isAdmin);
 
-    List<BookingResponse> getAllBookingsForAdmin();
+    /**
+     * Returns all bookings for admin view with optional filters.
+     * Pass null for any filter to skip it.
+     */
+    List<BookingResponse> getAllBookingsForAdmin(BookingStatus status, String resourceId,
+            LocalDate bookingDate, String requestedBy);
 
     BookingResponse approveBooking(String bookingId, BookingApprovalRequest request, String adminUsername);
 

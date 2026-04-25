@@ -5,9 +5,12 @@ import com.smartcampus.operationshub.booking.dto.BookingCancellationRequest;
 import com.smartcampus.operationshub.booking.dto.BookingCreateRequest;
 import com.smartcampus.operationshub.booking.dto.BookingRejectionRequest;
 import com.smartcampus.operationshub.booking.dto.BookingResponse;
+import com.smartcampus.operationshub.booking.entity.BookingStatus;
 import com.smartcampus.operationshub.booking.service.BookingService;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
 import java.util.List;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -54,8 +58,12 @@ public class BookingController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<BookingResponse>> getAllBookingsForAdmin() {
-        return ResponseEntity.ok(bookingService.getAllBookingsForAdmin());
+    public ResponseEntity<List<BookingResponse>> getAllBookingsForAdmin(
+            @RequestParam(required = false) BookingStatus status,
+            @RequestParam(required = false) String resourceId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate bookingDate,
+            @RequestParam(required = false) String requestedBy) {
+        return ResponseEntity.ok(bookingService.getAllBookingsForAdmin(status, resourceId, bookingDate, requestedBy));
     }
 
     @PutMapping("/{id}/approve")
