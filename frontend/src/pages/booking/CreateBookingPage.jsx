@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import BookingForm from '../../components/booking/BookingForm';
 import createIllustration from '../../assets/booking/booking-create-side-illustration.png';
 
@@ -15,6 +16,11 @@ const GLOBAL_STYLE = `
 `;
 
 export default function CreateBookingPage() {
+  const { currentUser } = useAuth();
+  if (currentUser.role === 'ADMIN') {
+    return <Navigate to="/bookings" replace />;
+  }
+
   return (
     <div className="bk-create-root min-h-screen" style={{ background: '#E9E5DC' }}>
       <style>{GLOBAL_STYLE}</style>
@@ -114,8 +120,8 @@ export default function CreateBookingPage() {
                   style={{ background: '#E5E7EB' }} />
                 {[
                   { label: 'Submit request', sub: 'Your form is sent for review' },
-                  { label: 'Admin review',   sub: 'Approved or rejected within 24h' },
-                  { label: 'Confirmation',   sub: 'Slot confirmed in My Bookings' },
+                  { label: 'Admin review', sub: 'Approved or rejected within 24h' },
+                  { label: 'Confirmation', sub: 'Slot confirmed in My Bookings' },
                 ].map(({ label, sub }, i) => (
                   <div key={i} className="flex items-start gap-3 relative">
                     <div className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold z-10"

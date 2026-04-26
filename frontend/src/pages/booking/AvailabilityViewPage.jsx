@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import AvailabilityPanel from '../../components/booking/AvailabilityPanel';
 import { BkLabel } from '../../components/booking/BkUI';
 
@@ -68,9 +69,10 @@ const STYLE = `
 `;
 
 export default function AvailabilityViewPage() {
-  const [resourceId,  setResourceId]  = useState('');
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser.role === 'ADMIN'; const [resourceId, setResourceId] = useState('');
   const [bookingDate, setBookingDate] = useState('');
-  const [query,       setQuery]       = useState({ resourceId: '', bookingDate: '' });
+  const [query, setQuery] = useState({ resourceId: '', bookingDate: '' });
   const hasResult = query.resourceId || query.bookingDate;
 
   const handleCheck = (e) => {
@@ -133,7 +135,7 @@ export default function AvailabilityViewPage() {
                 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                     stroke="#10B981" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                   </svg>
                 </div>
                 <h3 style={{ fontSize: 13, fontWeight: 700, color: '#111827', margin: 0 }}>
@@ -157,7 +159,7 @@ export default function AvailabilityViewPage() {
                 <button type="submit" className="av-submit">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                   </svg>
                   Check Availability
                 </button>
@@ -172,17 +174,17 @@ export default function AvailabilityViewPage() {
             )}
 
             {/* CTA link */}
-            {query.resourceId && (
+            {query.resourceId && !isAdmin && (
               <div className="av-u3">
                 <Link to="/bookings/new" className="av-cta">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                    <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
                   Create a Booking for this Resource
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
                   </svg>
                 </Link>
               </div>
@@ -197,21 +199,25 @@ export default function AvailabilityViewPage() {
               style={{ border: '1px solid rgba(0,0,0,0.07)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
               <div className="flex items-center gap-2 mb-4">
                 <div style={{ width: 3, height: 14, borderRadius: 99, background: '#10B981', flexShrink: 0 }} />
-                <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
-                  letterSpacing: '0.18em', color: '#374151', margin: 0 }}>
+                <p style={{
+                  fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
+                  letterSpacing: '0.18em', color: '#374151', margin: 0
+                }}>
                   How to use
                 </p>
               </div>
               <div>
                 {[
                   { n: '01', label: 'Enter Resource ID', sub: 'Use the exact ID from the campus portal, e.g. HALL-A1' },
-                  { n: '02', label: 'Pick a date',       sub: 'Choose the date you want to check for availability' },
-                  { n: '03', label: 'Review slots',      sub: 'Occupied time slots are shown so you can plan around them' },
-                  { n: '04', label: 'Create booking',    sub: 'Use the button below to request the resource directly' },
+                  { n: '02', label: 'Pick a date', sub: 'Choose the date you want to check for availability' },
+                  { n: '03', label: 'Review slots', sub: 'Occupied time slots are shown so you can plan around them' },
+                  { n: '04', label: 'Create booking', sub: 'Use the button below to request the resource directly' },
                 ].map(({ n, label, sub }) => (
                   <div key={n} className="av-tip">
-                    <span style={{ fontSize: 11, fontWeight: 800, color: '#10B981',
-                      flexShrink: 0, paddingTop: 2, minWidth: 24 }}>{n}</span>
+                    <span style={{
+                      fontSize: 11, fontWeight: 800, color: '#10B981',
+                      flexShrink: 0, paddingTop: 2, minWidth: 24
+                    }}>{n}</span>
                     <div>
                       <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', marginBottom: 2 }}>{label}</p>
                       <p style={{ fontSize: 12, color: '#9CA3AF', lineHeight: 1.5 }}>{sub}</p>
@@ -225,16 +231,18 @@ export default function AvailabilityViewPage() {
             <div className="rounded-2xl p-5" style={{ background: '#0C1D11' }}>
               <div className="flex items-center gap-2 mb-4">
                 <div style={{ width: 3, height: 14, borderRadius: 99, background: '#10B981', flexShrink: 0 }} />
-                <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
-                  letterSpacing: '0.22em', color: '#6EE7B7', margin: 0 }}>
+                <p style={{
+                  fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
+                  letterSpacing: '0.22em', color: '#6EE7B7', margin: 0
+                }}>
                   Slot Status Guide
                 </p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {[
-                  { dot: '#34D399', label: 'Available',  sub: 'No booking exists for this slot' },
-                  { dot: '#FBBF24', label: 'Pending',    sub: 'A request is awaiting admin review' },
-                  { dot: '#F87171', label: 'Occupied',   sub: 'Slot is confirmed and unavailable' },
+                  { dot: '#34D399', label: 'Available', sub: 'No booking exists for this slot' },
+                  { dot: '#FBBF24', label: 'Pending', sub: 'A request is awaiting admin review' },
+                  { dot: '#F87171', label: 'Occupied', sub: 'Slot is confirmed and unavailable' },
                 ].map(({ dot, label, sub }) => (
                   <div key={label} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                     <span style={{
