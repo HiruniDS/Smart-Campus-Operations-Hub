@@ -95,9 +95,10 @@ public class BookingServiceImpl implements BookingService {
         response.setAvailable(occupiedSlots.isEmpty());
 
         if (occupiedSlots.isEmpty()) {
-            response.setSummary("Resource is fully available on selected date");
+            response.setSummary("No bookings found for this resource on " + bookingDate + ". All time slots are open.");
         } else {
-            response.setSummary("Resource has " + occupiedSlots.size() + " occupied slot(s) on selected date");
+            response.setSummary(occupiedSlots.size() + " time slot(s) are already booked on " + bookingDate
+                    + ". Other time ranges remain available.");
         }
 
         return response;

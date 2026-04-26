@@ -381,15 +381,19 @@ export default function BookingDashboardPage() {
                   <div className="flex items-center gap-2.5 mb-5">
                     <div className="w-1 h-4 rounded-full" style={{ background: '#10B981' }} />
                     <span className="text-[10px] font-extrabold uppercase tracking-[0.22em]" style={{ color: '#6EE7B7' }}>
-                      How it works
+                      {isAdmin ? 'Admin workflow' : 'How it works'}
                     </span>
                   </div>
                   <div className="space-y-5">
-                    {[
+                    {(isAdmin ? [
+                      'Students submit booking requests for campus resources.',
+                      'Review each request — check the date, time, and resource details.',
+                      'Approve to confirm the slot, or reject with a reason if unavailable.',
+                    ] : [
                       'Submit a request for a campus resource (room, lab, hall, etc.)',
                       'An admin reviews and approves or rejects your request.',
                       'Your slot is confirmed and visible under My Bookings.',
-                    ].map((text, i) => (
+                    ]).map((text, i) => (
                       <div key={i} className="flex gap-4 items-start">
                         <span className="shrink-0 text-xs font-extrabold tabular-nums"
                           style={{ color: '#10B981', paddingTop: '2px' }}>
@@ -413,7 +417,7 @@ export default function BookingDashboardPage() {
             {/* ╔══════════════════════════════╗
                 ║      RESOURCE GRID          ║
                 ╚══════════════════════════════╝ */}
-            <div className="bk-u3">
+            {!isAdmin && <div className="bk-u3">
               {/* section header */}
               <div className="flex items-end justify-between mb-4">
                 <div>
@@ -451,7 +455,7 @@ export default function BookingDashboardPage() {
                   </Link>
                 ))}
               </div>
-            </div>
+            </div>}
 
           </div>
         )}
