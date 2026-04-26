@@ -11,9 +11,9 @@ import dashboardEmpty from '../../assets/booking/booking-dashboard-empty-state.p
 
 /* ─── Status colours ─────────────────────────────────────── */
 const STATUS_BORDER = {
-  APPROVED:  'border-l-emerald-500',
-  PENDING:   'border-l-amber-400',
-  REJECTED:  'border-l-rose-500',
+  APPROVED: 'border-l-emerald-500',
+  PENDING: 'border-l-amber-400',
+  REJECTED: 'border-l-rose-500',
   CANCELLED: 'border-l-slate-300',
 };
 
@@ -86,9 +86,9 @@ const RESOURCE_TYPES = [
 /* ─── Quick-action colour map ────────────────────────────── */
 const QA_COLOR = {
   emerald: { bg: '#F0FDF4', text: '#059669' },
-  indigo:  { bg: '#EEF2FF', text: '#6366F1' },
-  teal:    { bg: '#F0FDFA', text: '#0D9488' },
-  violet:  { bg: '#F5F3FF', text: '#7C3AED' },
+  indigo: { bg: '#EEF2FF', text: '#6366F1' },
+  teal: { bg: '#F0FDFA', text: '#0D9488' },
+  violet: { bg: '#F5F3FF', text: '#7C3AED' },
 };
 
 /* ─── Inline styles injected once ────────────────────────── */
@@ -118,8 +118,8 @@ export default function BookingDashboardPage() {
   const isAdmin = currentUser.role === 'ADMIN';
 
   const [bookings, setBookings] = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -136,9 +136,9 @@ export default function BookingDashboardPage() {
 
   useEffect(() => { load(); }, [currentUser]);
 
-  const recent   = [...bookings].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6);
+  const recent = [...bookings].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6);
   const initials = currentUser?.username?.charAt(0).toUpperCase() || '?';
-  const hour     = new Date().getHours();
+  const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
@@ -258,8 +258,8 @@ export default function BookingDashboardPage() {
               <BookingSummaryCards bookings={bookings} />
             </div>
 
-            {/* two-column grid — use standard 3-col grid so xl fires reliably */}
-            <div className="bk-u2 grid grid-cols-1 xl:grid-cols-3 gap-6">
+            {/* two-column grid — 4 cols at xl so the right insights panel fills the space */}
+            <div className="bk-u2 grid grid-cols-1 xl:grid-cols-4 gap-6">
 
               {/* ── Recent Bookings panel — spans 2 of 3 cols on xl ── */}
               <div className="xl:col-span-2 flex flex-col rounded-2xl overflow-hidden bg-white"
@@ -359,24 +359,24 @@ export default function BookingDashboardPage() {
                     {!isAdmin ? (
                       <>
                         <QuickActionItem to="/bookings/new" color="emerald" label="Create Booking" sub="Request a campus resource"
-                          icon={<><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>} />
+                          icon={<><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></>} />
                         <QuickActionItem to="/bookings/me" color="indigo" label="My Bookings" sub="View your booking history"
-                          icon={<><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></>} />
+                          icon={<><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></>} />
                         <QuickActionItem to="/bookings/availability" color="teal" label="Check Availability" sub="See open time slots"
-                          icon={<><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>} />
+                          icon={<><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></>} />
                       </>
                     ) : (
                       <>
                         <QuickActionItem to="/bookings/admin" color="violet" label="Review Requests" sub="Approve or reject bookings"
-                          icon={<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>} />
+                          icon={<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />} />
                         <QuickActionItem to="/bookings/availability" color="teal" label="Check Availability" sub="See open time slots"
-                          icon={<><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>} />
+                          icon={<><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></>} />
                       </>
                     )}
                   </div>
                 </div>
 
-                {/* How it works — flex-1 so it fills remaining right-column height */}
+                {/* How it works */}
                 <div className="flex-1 rounded-2xl p-6" style={{ background: '#0C1D11' }}>
                   <div className="flex items-center gap-2.5 mb-5">
                     <div className="w-1 h-4 rounded-full" style={{ background: '#10B981' }} />
@@ -402,6 +402,11 @@ export default function BookingDashboardPage() {
                   </div>
                 </div>
 
+              </div>
+
+              {/* ── Booking Insights — 4th column ── */}
+              <div className="xl:col-span-1 flex flex-col">
+                <BookingInsightsCard bookings={bookings} isAdmin={isAdmin} />
               </div>
             </div>
 
@@ -474,5 +479,178 @@ function QuickActionItem({ to, icon, label, sub, color = 'emerald' }) {
       <span className="text-sm transition-transform group-hover:translate-x-0.5"
         style={{ color: '#D1D5DB' }}>›</span>
     </Link>
+  );
+}
+
+/* ─── BookingInsightsCard sub-component ─────────────────── */
+function BookingInsightsCard({ bookings, isAdmin }) {
+  const total = bookings.length;
+  const counts = {
+    APPROVED: bookings.filter(b => b.status === 'APPROVED').length,
+    PENDING: bookings.filter(b => b.status === 'PENDING').length,
+    REJECTED: bookings.filter(b => b.status === 'REJECTED').length,
+    CANCELLED: bookings.filter(b => b.status === 'CANCELLED').length,
+  };
+  const approvalRate = total > 0 ? Math.round((counts.APPROVED / total) * 100) : 0;
+  const todayStr = new Date().toISOString().split('T')[0];
+  const upcoming = bookings.filter(b => b.status === 'APPROVED' && b.bookingDate >= todayStr).length;
+
+  const STATUS_INFO = [
+    { key: 'APPROVED', label: 'Approved', color: '#10B981' },
+    { key: 'PENDING', label: 'Pending', color: '#F59E0B' },
+    { key: 'REJECTED', label: 'Rejected', color: '#EF4444' },
+    { key: 'CANCELLED', label: 'Cancelled', color: '#94A3B8' },
+  ];
+
+  /* SVG donut segments */
+  const r = 36;
+  const circumference = 2 * Math.PI * r;
+  let cumLen = 0;
+  const segments = STATUS_INFO
+    .filter(s => counts[s.key] > 0)
+    .map(s => {
+      const len = (counts[s.key] / total) * circumference;
+      const offset = -cumLen;
+      cumLen += len;
+      return { ...s, count: counts[s.key], len, offset };
+    });
+
+  return (
+    <div className="h-full rounded-2xl overflow-hidden bg-white flex flex-col"
+      style={{ border: '1px solid rgba(0,0,0,0.07)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+
+      {/* Header */}
+      <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: '1px solid #F0EDE6' }}>
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#FFF7ED' }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10" />
+            <line x1="12" y1="20" x2="12" y2="4" />
+            <line x1="6" y1="20" x2="6" y2="14" />
+          </svg>
+        </div>
+        <span className="font-bold text-sm" style={{ color: '#111827' }}>
+          {isAdmin ? 'Request Overview' : 'My Insights'}
+        </span>
+      </div>
+
+      {total === 0 ? (
+        /* empty state */
+        <div className="flex flex-col items-center justify-center gap-3 flex-1 py-10 px-5 text-center">
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: '#FFF7ED' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: '#374151' }}>No data yet</p>
+            <p className="text-xs mt-1" style={{ color: '#9CA3AF' }}>Insights appear once you have bookings.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="p-5 flex flex-col gap-5 flex-1">
+
+          {/* ── 2 stat pills ── */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="rounded-xl p-3.5" style={{ background: '#F0FDF4' }}>
+              <p className="text-2xl font-extrabold leading-none mb-1" style={{ color: '#059669' }}>{total}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: '#6EE7B7' }}>Total</p>
+            </div>
+            <div className="rounded-xl p-3.5" style={{ background: approvalRate >= 50 ? '#F0FDF4' : '#FFF7ED' }}>
+              <p className="text-2xl font-extrabold leading-none mb-1"
+                style={{ color: approvalRate >= 50 ? '#059669' : '#EA580C' }}>
+                {approvalRate}%
+              </p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide"
+                style={{ color: approvalRate >= 50 ? '#6EE7B7' : '#FDBA74' }}>
+                Approved
+              </p>
+            </div>
+          </div>
+
+          {/* ── SVG donut + legend ── */}
+          <div className="flex items-center gap-4">
+            <div className="relative shrink-0" style={{ width: 88, height: 88 }}>
+              <svg viewBox="0 0 100 100" width="88" height="88" style={{ transform: 'rotate(-90deg)' }}>
+                <circle cx="50" cy="50" r={r} fill="none" stroke="#F3F4F6" strokeWidth="15" />
+                {segments.map(s => (
+                  <circle
+                    key={s.key} cx="50" cy="50" r={r} fill="none"
+                    stroke={s.color} strokeWidth="15" strokeLinecap="butt"
+                    strokeDasharray={`${s.len} ${circumference - s.len}`}
+                    strokeDashoffset={s.offset}
+                  />
+                ))}
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-[15px] font-extrabold leading-none" style={{ color: '#111827' }}>{total}</span>
+                <span className="text-[9px] font-semibold uppercase tracking-wide mt-0.5" style={{ color: '#9CA3AF' }}>total</span>
+              </div>
+            </div>
+
+            {/* legend */}
+            <div className="flex-1 space-y-1.5">
+              {STATUS_INFO.filter(s => counts[s.key] > 0).map(s => (
+                <div key={s.key} className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: s.color }} />
+                  <span className="text-[11px] flex-1 truncate" style={{ color: '#6B7280' }}>{s.label}</span>
+                  <span className="text-[11px] font-bold tabular-nums" style={{ color: '#111827' }}>{counts[s.key]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Upcoming approved pill ── */}
+          {upcoming > 0 && (
+            <div className="flex items-center gap-3 rounded-xl p-3" style={{ background: '#F0FDF4' }}>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#D1FAE5' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <p className="text-[12px] font-bold" style={{ color: '#065F46' }}>{upcoming} upcoming</p>
+                <p className="text-[11px]" style={{ color: '#6EE7B7' }}>approved reservation{upcoming !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
+          )}
+
+          {/* ── Admin: pending action pill ── */}
+          {isAdmin && counts.PENDING > 0 && (
+            <div className="flex items-center gap-3 rounded-xl p-3" style={{ background: '#FFFBEB' }}>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#FEF3C7' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <p className="text-[12px] font-bold" style={{ color: '#92400E' }}>{counts.PENDING} awaiting review</p>
+                <p className="text-[11px]" style={{ color: '#D97706' }}>Pending approval</p>
+              </div>
+            </div>
+          )}
+
+          {/* ── Horizontal bar breakdown ── */}
+          <div className="space-y-2.5 mt-auto pt-2" style={{ borderTop: '1px solid #F5F3EE' }}>
+            {STATUS_INFO.filter(s => counts[s.key] > 0).map(s => {
+              const pct = Math.round((counts[s.key] / total) * 100);
+              return (
+                <div key={s.key}>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[11px]" style={{ color: '#6B7280' }}>{s.label}</span>
+                    <span className="text-[11px] font-bold tabular-nums" style={{ color: '#374151' }}>{pct}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#F3F4F6' }}>
+                    <div className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${pct}%`, background: s.color }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+        </div>
+      )}
+    </div>
   );
 }
