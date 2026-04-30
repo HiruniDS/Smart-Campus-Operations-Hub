@@ -9,6 +9,7 @@ import com.smartcampus.operationshub.booking.dto.BookingRejectionRequest;
 import com.smartcampus.operationshub.booking.dto.BookingResponse;
 import com.smartcampus.operationshub.booking.entity.Booking;
 import com.smartcampus.operationshub.booking.entity.BookingStatus;
+import com.cliauth.service.NotificationService;
 import com.smartcampus.operationshub.booking.repository.BookingRepository;
 import com.smartcampus.operationshub.booking.service.BookingService;
 import com.smartcampus.operationshub.ticketing.exception.BadRequestException;
@@ -26,9 +27,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
+    private final NotificationService notificationService;
 
-    public BookingServiceImpl(BookingRepository bookingRepository) {
+    public BookingServiceImpl(BookingRepository bookingRepository, NotificationService notificationService) {
         this.bookingRepository = bookingRepository;
+        this.notificationService = notificationService;
     }
 
     // -------------------------------------------------------------------------
@@ -167,7 +170,14 @@ public class BookingServiceImpl implements BookingService {
         booking.setReviewReason(request.getReviewReason());
         booking.setUpdatedAt(LocalDateTime.now());
 
-        return toResponse(bookingRepository.save(booking));
+        BookingResponse response = toResponse(bookingRepository.save(booking));
+        notificationService.createNotificationByEmail(
+                booking.getRequestedBy(),
+                "Booking Approved",
+                "Your booking for " + booking.getResourceName() + " on " + booking.getBookingDate()
+                        + " has been APPROVED.",
+                "SUCCESS");
+        return response;
     }
 
     @Override
@@ -186,7 +196,13 @@ public class BookingServiceImpl implements BookingService {
         booking.setReviewReason(request.getReason());
         booking.setUpdatedAt(LocalDateTime.now());
 
-        return toResponse(bookingRepository.save(booking));
+        BookingResponse response = toResponse(bookingRepository.save(booking));
+        notificationService.createNotificationByEmail(
+                booking.getRequestedBy(),
+                "Booking Rejected",
+                "Your booking for " + booking.getResourceName() + " was rejected. Reason: " + request.getReason(),
+                "WARNING");
+        return response;
     }
 
     @Override
@@ -211,7 +227,14 @@ public class BookingServiceImpl implements BookingService {
         booking.setCancellationReason(request.getReason());
         booking.setUpdatedAt(LocalDateTime.now());
 
-        return toResponse(bookingRepository.save(booking));
+        BookingResponse response = toResponse(bookingRepository.save(booking));
+        notificationService.createNotificationByEmail(
+                booking.getRequestedBy(),
+                "Booking Cancelled",
+                "Your booking for " + booking.getResourceName() + " on " + booking.getBookingDate()
+                        + " has been cancelled.",
+                "INFO");
+        return response;
     }
 
     // -------------------------------------------------------------------------

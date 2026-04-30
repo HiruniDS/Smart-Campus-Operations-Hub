@@ -1,35 +1,31 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+/**
+ * Bridge adapter: exposes the legacy `currentUser` interface (used by booking/ticket pages)
+ * by reading from the real AuthContext in contexts/AuthContext.tsx.
+ */
+import { useContext, useMemo } from 'react';
+import { AuthContext } from '../contexts/AuthContext';
 
-const AuthContext = createContext(null);
-
-const DEMO_USERS = {
-  student1: { username: 'student1', password: 'password123', role: 'USER' },
-  admin1: { username: 'admin1', password: 'password123', role: 'ADMIN' },
-  tech1: { username: 'tech1', password: 'password123', role: 'TECHNICIAN' },
-  tech2: { username: 'tech2', password: 'password123', role: 'TECHNICIAN' },
-};
-
+// No-op provider – the real AuthProvider is already mounted by main.tsx
 export function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(DEMO_USERS.student1);
-
-  const loginAs = (username) => {
-    if (DEMO_USERS[username]) {
-      setCurrentUser(DEMO_USERS[username]);
-    }
-  };
-
-  const value = useMemo(
-    () => ({ currentUser, loginAs, users: Object.values(DEMO_USERS) }),
-    [currentUser]
-  );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return children;
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
     throw new Error('useAuth must be used within AuthProvider');
   }
-  return context;
+
+  const currentUser = useMemo(() => ctx.user
+    ? {
+      username: ctx.user.email,
+      role: ctx.user.role,
+      name: ctx.user.name,
+      id: ctx.user.id,
+      email: ctx.user.email,
+    }
+    : { username: '', role: 'USER', name: '', id: '', email: '' },
+  [ctx.user]);
+
+  return { currentUser };
 }

@@ -12,6 +12,8 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+export { AuthContext };
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -22,7 +24,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
-    
+
     // Check if we just returned from Google OAuth with params
     const params = new URLSearchParams(window.location.search);
     const oauthToken = params.get('token');
@@ -34,17 +36,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         role: params.get('role') || 'USER',
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${params.get('name')}`
       };
-      
+
       localStorage.setItem("token", oauthToken);
       localStorage.setItem("role", oauthUser.role);
       localStorage.setItem('user', JSON.stringify(oauthUser));
-      
+
       setState({
         user: oauthUser as any,
         isAuthenticated: true,
         isLoading: false,
       });
-      
+
       // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
       return;
@@ -70,6 +72,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.setItem("token", token);
       localStorage.setItem("role", user.role);
       localStorage.setItem('user', JSON.stringify(user));
+      // Store credentials for HTTP Basic auth used by booking/ticket API client
+      localStorage.setItem('basicAuthUser', email);
+      localStorage.setItem('basicAuthPass', password);
 
       setState({
         user,
@@ -91,6 +96,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.setItem("token", token);
       localStorage.setItem("role", user.role);
       localStorage.setItem('user', JSON.stringify(user));
+      // Store credentials for HTTP Basic auth used by booking/ticket API client
+      localStorage.setItem('basicAuthUser', email);
+      localStorage.setItem('basicAuthPass', password);
 
       setState({
         user,
@@ -106,15 +114,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const googleLogin = async (role: UserRole) => {
     // Save the intended role in a cookie so the backend can read it after the redirect
     document.cookie = `intended_role=${role}; path=/; max-age=300`; // 5 minute expiry
-    
+
     // For real Google Auth, we redirect the entire browser to the backend
-    window.location.href = `http://localhost:5000/oauth2/authorization/google`;
+    window.location.href = `http://localhost:8080/oauth2/authorization/google`;
   };
 
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     localStorage.removeItem('user');
+    localStorage.removeItem('basicAuthUser');
+    localStorage.removeItem('basicAuthPass');
     setState({
       user: null,
       isAuthenticated: false,

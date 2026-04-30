@@ -1,5 +1,6 @@
 package com.smartcampus.operationshub.ticketing.service.impl;
 
+import com.cliauth.service.NotificationService;
 import com.smartcampus.operationshub.ticketing.dto.AssignTechnicianRequest;
 import com.smartcampus.operationshub.ticketing.dto.AttachmentResponse;
 import com.smartcampus.operationshub.ticketing.dto.CommentCreateRequest;
@@ -40,12 +41,15 @@ public class TicketServiceImpl implements TicketService {
     private static final int MAX_ATTACHMENTS = 3;
 
     private final TicketRepository ticketRepository;
+    private final NotificationService notificationService;
     private final Path uploadPath;
 
     public TicketServiceImpl(
             TicketRepository ticketRepository,
+            NotificationService notificationService,
             @Value("${app.upload.dir}") String uploadDir) {
         this.ticketRepository = ticketRepository;
+        this.notificationService = notificationService;
         this.uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
 
         try {
@@ -65,16 +69,22 @@ public class TicketServiceImpl implements TicketService {
         ticket.setStatus(TicketStatus.OPEN);
         ticket.setCreatedBy(username);
         ticket.setCreatedAt(LocalDateTime.now());
-        return toResponse(ticketRepository.save(ticket));
+        TicketResponse response = toResponse(ticketRepository.save(ticket));
+        notificationService.notifyAllAdmins(
+                "New Ticket Submitted",
+                "A new ticket \"" + ticket.getTitle() + "\" has been submitted by " + username + ".",
+                "INFO");
+        return response;
     }
 
     @Override
-    public List<TicketResponse> getTickets(TicketStatus status, TicketPriority priority, String username, boolean isAdmin, boolean isTechnician) {
+    public List<TicketResponse> getTickets(TicketStatus status, TicketPriority priority, String username,
+            boolean isAdmin, boolean isTechnician) {
         if (isAdmin) {
             return ticketRepository.findAll()
                     .stream()
-                .filter(ticket -> status == null || ticket.getStatus() == status)
-                .filter(ticket -> priority == null || ticket.getPriority() == priority)
+                    .filter(ticket -> status == null || ticket.getStatus() == status)
+                    .filter(ticket -> priority == null || ticket.getPriority() == priority)
                     .map(this::toResponse)
                     .toList();
         }
@@ -132,11 +142,18 @@ public class TicketServiceImpl implements TicketService {
         if (ticket.getStatus() == TicketStatus.OPEN) {
             ticket.setStatus(TicketStatus.IN_PROGRESS);
         }
-        return toResponse(ticketRepository.save(ticket));
+        TicketResponse response = toResponse(ticketRepository.save(ticket));
+        notificationService.createNotificationByEmail(
+                request.getTechnicianUsername(),
+                "New Ticket Assigned",
+                "You have been assigned ticket #" + ticketId + ": \"" + ticket.getTitle() + "\".",
+                "INFO");
+        return response;
     }
 
     @Override
-    public TicketResponse updateStatus(String ticketId, UpdateStatusRequest request, String username, boolean isAdmin, boolean isTechnician) {
+    public TicketResponse updateStatus(String ticketId, UpdateStatusRequest request, String username, boolean isAdmin,
+            boolean isTechnician) {
         Ticket ticket = getTicket(ticketId);
 
         if (isTechnician && !username.equals(ticket.getAssignedTo())) {
@@ -149,11 +166,32 @@ public class TicketServiceImpl implements TicketService {
         }
 
         ticket.setStatus(nextStatus);
-        return toResponse(ticketRepository.save(ticket));
+        TicketResponse response = toResponse(ticketRepository.save(ticket));
+
+        if (nextStatus == TicketStatus.RESOLVED) {
+            notificationService.createNotificationByEmail(
+                    ticket.getCreatedBy(),
+                    "Ticket Resolved",
+                    "Your ticket \"" + ticket.getTitle() + "\" has been resolved.",
+                    "SUCCESS");
+            notificationService.notifyAllAdmins(
+                    "Ticket Resolved",
+                    "Ticket \"" + ticket.getTitle() + "\" has been marked as resolved by " + username + ".",
+                    "SUCCESS");
+        } else if (nextStatus == TicketStatus.CLOSED) {
+            notificationService.createNotificationByEmail(
+                    ticket.getCreatedBy(),
+                    "Ticket Closed",
+                    "Your ticket \"" + ticket.getTitle() + "\" has been closed.",
+                    "INFO");
+        }
+
+        return response;
     }
 
     @Override
-    public TicketResponse addComment(String ticketId, CommentCreateRequest request, String username, boolean isAdmin, boolean isTechnician) {
+    public TicketResponse addComment(String ticketId, CommentCreateRequest request, String username, boolean isAdmin,
+            boolean isTechnician) {
         Ticket ticket = getTicket(ticketId);
         verifyCanView(ticket, username, isAdmin, isTechnician);
 
@@ -168,7 +206,8 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
-    public TicketResponse addAttachments(String ticketId, List<MultipartFile> files, String username, boolean isAdmin, boolean isTechnician) {
+    public TicketResponse addAttachments(String ticketId, List<MultipartFile> files, String username, boolean isAdmin,
+            boolean isTechnician) {
         Ticket ticket = getTicket(ticketId);
         verifyCanView(ticket, username, isAdmin, isTechnician);
 

@@ -2,13 +2,13 @@ import React from 'react';
 import { useNavigate, Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { 
-  LayoutDashboard, 
-  CalendarDays, 
-  Ticket, 
-  Users, 
-  Bell, 
-  Settings, 
+import {
+  LayoutDashboard,
+  CalendarDays,
+  Ticket,
+  Users,
+  Bell,
+  Settings,
   LogOut,
   Menu,
   ChevronRight,
@@ -63,39 +63,39 @@ export default function DashboardLayout() {
   };
 
   const menuItems = [
-    { 
-      label: 'Overview', 
-      icon: LayoutDashboard, 
-      path: '/dashboard', 
-      roles: ['USER', 'ADMIN', 'TECHNICIAN'] 
+    {
+      label: 'Overview',
+      icon: LayoutDashboard,
+      path: '/dashboard',
+      roles: ['USER', 'ADMIN', 'TECHNICIAN']
     },
-    { 
-      label: 'Facility Bookings', 
-      icon: CalendarDays, 
-      path: '/dashboard/bookings', 
-      roles: ['USER', 'ADMIN'] 
+    {
+      label: 'Facility Bookings',
+      icon: CalendarDays,
+      path: '/bookings',
+      roles: ['USER', 'ADMIN']
     },
-    { 
-      label: 'Maintenance Tickets', 
-      icon: Ticket, 
-      path: '/dashboard/tickets', 
-      roles: ['TECHNICIAN', 'ADMIN', 'USER'] 
+    {
+      label: 'Maintenance Tickets',
+      icon: Ticket,
+      path: '/tickets',
+      roles: ['TECHNICIAN', 'ADMIN', 'USER']
     },
-    { 
-      label: 'System Notices', 
-      icon: Megaphone, 
-      path: '/dashboard/notices', 
-      roles: ['ADMIN'] 
+    {
+      label: 'System Notices',
+      icon: Megaphone,
+      path: '/dashboard/notices',
+      roles: ['ADMIN']
     },
-    { 
-      label: 'User Management', 
-      icon: Users, 
-      path: '/dashboard/users', 
-      roles: ['ADMIN'] 
+    {
+      label: 'User Management',
+      icon: Users,
+      path: '/dashboard/users',
+      roles: ['ADMIN']
     },
   ];
 
-  const filteredMenu = menuItems.filter(item => 
+  const filteredMenu = menuItems.filter(item =>
     !item.roles || (user && item.roles.includes(user.role))
   );
 
@@ -107,11 +107,10 @@ export default function DashboardLayout() {
           <Link
             key={item.path}
             to={item.path}
-            className={`flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-widest rounded-lg transition-all ${
-              isActive 
-                ? 'bg-slate-100 text-black' 
+            className={`flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-widest rounded-lg transition-all ${isActive
+                ? 'bg-slate-100 text-black'
                 : 'text-slate-400 hover:text-slate-900 hover:bg-slate-50'
-            }`}
+              }`}
           >
             <item.icon className={`h-4 w-4 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
             {item.label}
@@ -123,7 +122,7 @@ export default function DashboardLayout() {
 
   const AdminLinks = ({ className = "" }: { className?: string }) => {
     if (user?.role !== 'ADMIN') return null;
-    
+
     return (
       <div className={`flex items-center gap-1 ${className}`}>
         <button className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-all">
@@ -147,7 +146,7 @@ export default function DashboardLayout() {
       {/* Top Navigation Bar */}
       <header className="h-20 border-b border-slate-200 bg-white sticky top-0 z-30 shadow-sm">
         <div className="max-w-[1600px] mx-auto h-full flex items-center justify-between px-6">
-          
+
           <div className="flex items-center gap-8">
             {/* Logo */}
             <Link to="/dashboard" className="flex items-center gap-3">
@@ -159,32 +158,32 @@ export default function DashboardLayout() {
 
             {/* Desktop Main Nav */}
             <div className="hidden lg:flex items-center gap-4">
-               <div className="h-8 w-px bg-slate-100 mx-2" />
-               <NavLinks />
+              <div className="h-8 w-px bg-slate-100 mx-2" />
+              <NavLinks />
             </div>
           </div>
 
           <div className="flex items-center gap-4">
             {/* Desktop Admin Nav */}
             <div className="hidden xl:flex items-center gap-4 mr-4">
-               <div className="h-8 w-px bg-slate-100 mx-2" />
-               <AdminLinks />
+              <div className="h-8 w-px bg-slate-100 mx-2" />
+              <AdminLinks />
             </div>
 
             {/* Search Bar */}
             <div className="hidden md:flex items-center bg-slate-50 rounded-full px-4 py-2 border border-slate-200 w-64 focus-within:w-80 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
               <Search className="h-4 w-4 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Search resources..." 
+              <input
+                type="text"
+                placeholder="Search resources..."
                 className="bg-transparent border-none text-xs text-slate-900 focus:ring-0 ml-2 w-full placeholder:text-slate-400 font-bold uppercase tracking-wider"
               />
             </div>
-            
+
             {/* Notifications */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setIsNotificationsOpen(true)}
               className="text-slate-500 hover:text-slate-900 relative rounded-full hover:bg-slate-50"
             >
@@ -195,16 +194,16 @@ export default function DashboardLayout() {
                 </span>
               )}
             </Button>
-            
-            <NotificationPanel 
-              isOpen={isNotificationsOpen} 
-              onClose={() => setIsNotificationsOpen(false)} 
+
+            <NotificationPanel
+              isOpen={isNotificationsOpen}
+              onClose={() => setIsNotificationsOpen(false)}
             />
 
             {/* User Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <div 
+                <div
                   role="button"
                   className="flex items-center gap-3 p-1 pr-3 rounded-full hover:bg-slate-50 transition-all border border-transparent hover:border-slate-200 cursor-pointer outline-none"
                 >
@@ -236,7 +235,7 @@ export default function DashboardLayout() {
                   <span className="text-sm font-semibold">Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-slate-100" />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={handleLogout}
                   className="rounded-xl py-2 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
                 >
@@ -307,7 +306,7 @@ export default function DashboardLayout() {
               {location.pathname.split('/').pop() || 'Overview'}
             </span>
           </div>
-          
+
           <Outlet />
         </div>
       </main>
@@ -316,7 +315,7 @@ export default function DashboardLayout() {
       <footer className="py-6 border-t border-slate-200 mt-auto">
         <div className="max-w-[1600px] mx-auto px-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {[1,2,3,4].map(i => <div key={i} className="h-1 w-8 bg-slate-200 rounded-full" />)}
+            {[1, 2, 3, 4].map(i => <div key={i} className="h-1 w-8 bg-slate-200 rounded-full" />)}
             <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-2">SmartCampus Infrastructure v4.2</span>
           </div>
           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-4">

@@ -1,13 +1,9 @@
 package com.cliauth;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
+/**
+ * Legacy standalone entry point – retained for reference only.
+ * Application now starts from
+ * {@link com.smartcampus.operationshub.SmartCampusOperationsHubApplication}.
+ */
 public class CliAuthApplication {
-
-	public static void main(String[] args) {
-		SpringApplication.run(CliAuthApplication.class, args);
-	}
-
 }
