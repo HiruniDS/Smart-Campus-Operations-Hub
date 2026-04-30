@@ -465,19 +465,15 @@ export default function FacilitiesPage() {
             </div>
           </motion.div>
 
-          <motion.div variants={stagger} initial="hidden" animate="visible" className="grid gap-5 lg:grid-cols-2 2xl:grid-cols-3">
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            animate="visible"
+            className={`grid gap-5 ${isRegularUser ? 'md:grid-cols-2 xl:grid-cols-3' : 'lg:grid-cols-2 2xl:grid-cols-3'}`}
+          >
             {filtered.map((facility) => {
               const facilityBookings = bookings.filter((booking) => booking.facilityId === facility.id).length;
               const utilization = Math.min(100, Math.round(facilityBookings.length * 16 + Math.min(facility.capacity, 120) / 4));
-              const suitabilityLabel =
-                facility.capacity >= 120
-                  ? 'Best for large events'
-                  : facility.capacity >= 50
-                    ? 'Best for medium groups'
-                    : facility.capacity >= 20
-                      ? 'Best for workshops'
-                      : 'Best for small sessions';
-
               return (
                 <motion.article
                   key={facility.id}
@@ -530,9 +526,6 @@ export default function FacilitiesPage() {
                           <span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">
                             Ready to book
                           </span>
-                          <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                            {suitabilityLabel}
-                          </span>
                         </div>
                       )}
                       <h3 className="text-2xl font-black tracking-tight text-slate-950">{facility.name}</h3>
@@ -556,33 +549,20 @@ export default function FacilitiesPage() {
                       </div>
                     </div>
 
-                    {isRegularUser && (
-                      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <div className="flex items-center justify-between gap-4">
-                          <div>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Quick fit</p>
-                            <p className="mt-1 text-sm font-bold text-slate-950">{suitabilityLabel}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Demand</p>
-                            <p className="mt-1 text-sm font-bold text-slate-950">{facilityBookings} recent booking{facilityBookings === 1 ? '' : 's'}</p>
-                          </div>
+                    {!isRegularUser && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                          <span>Readiness</span>
+                          <span>{facility.status === 'ACTIVE' ? 'Available for bookings' : 'Maintenance blocked'}</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className={`h-full rounded-full ${facility.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                            style={{ width: `${facility.status === 'ACTIVE' ? Math.max(utilization, 30) : 100}%` }}
+                          />
                         </div>
                       </div>
                     )}
-
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                        <span>Readiness</span>
-                        <span>{facility.status === 'ACTIVE' ? 'Available for bookings' : 'Maintenance blocked'}</span>
-                      </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className={`h-full rounded-full ${facility.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-rose-500'}`}
-                          style={{ width: `${facility.status === 'ACTIVE' ? Math.max(utilization, 30) : 100}%` }}
-                        />
-                      </div>
-                    </div>
 
                     <div className={`flex flex-wrap gap-3 ${isRegularUser ? 'items-center rounded-2xl border border-slate-200 bg-white p-3 shadow-sm' : ''}`}>
                       <button
@@ -597,12 +577,6 @@ export default function FacilitiesPage() {
                         <Clock3 className="h-4 w-4" />
                         {isRegularUser ? 'Book this facility' : 'Book resource'}
                       </button>
-
-                      {isRegularUser && (
-                        <div className="inline-flex items-center rounded-2xl bg-slate-100 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-                          Fast access
-                        </div>
-                      )}
 
                       {canManage && (
                         <button
