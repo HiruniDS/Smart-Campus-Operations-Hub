@@ -31,6 +31,7 @@ import {
   updateFacility,
   type Facility,
 } from '@/lib/mergedStore';
+import { GradientDots } from '@/components/ui/gradient-dots';
 
 const typeOptions: Facility['type'][] = ['LAB', 'LECTURE_HALL', 'SEMINAR_ROOM', 'SPORTS_FACILITY', 'STUDY_ROOM', 'MEETING_ROOM', 'OTHER'];
 
@@ -231,122 +232,189 @@ export default function FacilitiesPage() {
 
   return (
     <section className="space-y-8">
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={stagger}
-        className="relative overflow-hidden rounded-[2.25rem] border border-slate-200 bg-[linear-gradient(135deg,#f5f7eb_0%,#ffffff_35%,#eff6ff_100%)] shadow-[0_30px_80px_-30px_rgba(15,23,42,0.28)]"
-      >
-        <div className="absolute inset-0">
-          <motion.div
-            animate={{ x: [0, 16, 0], y: [0, -10, 0] }}
-            transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute left-[-4rem] top-[-3rem] h-48 w-48 rounded-full bg-emerald-200/45 blur-3xl"
-          />
-          <motion.div
-            animate={{ x: [0, -18, 0], y: [0, 16, 0] }}
-            transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute right-[-2rem] top-[2rem] h-56 w-56 rounded-full bg-sky-200/40 blur-3xl"
-          />
-          <motion.div
-            animate={{ x: [0, 20, 0] }}
-            transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute bottom-[-4rem] left-[30%] h-56 w-56 rounded-full bg-amber-100/60 blur-3xl"
-          />
-          <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.72),rgba(255,255,255,0.2))]" />
-        </div>
-
-        <div className="relative grid gap-8 p-6 sm:p-8 xl:grid-cols-[1.15fr_0.85fr] xl:p-10">
-          <div className="space-y-6">
-            <motion.div variants={fadeUp} transition={{ duration: 0.5 }} className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.24em] text-emerald-700 backdrop-blur">
-              <Sparkles className="h-3.5 w-3.5" />
-              Resource Experience Layer
-            </motion.div>
-
-            <motion.div variants={fadeUp} transition={{ duration: 0.55 }} className="space-y-4">
-              <h1 className="max-w-4xl text-4xl font-black tracking-tight text-slate-950 sm:text-5xl xl:text-6xl">
-                A premium facilities cockpit for smarter campus operations.
-              </h1>
-              <p className="max-w-2xl text-sm font-medium leading-7 text-slate-600 sm:text-base">
-                {isRegularUser
-                  ? 'Discover campus spaces through a clearer, faster interface with better visibility into availability, fit, and booking readiness.'
-                  : 'Manage facilities through a polished control surface that blends analytics, demand signals, and resource actions into one high-clarity workspace.'}
-              </p>
-            </motion.div>
-
-            <motion.div variants={fadeUp} transition={{ duration: 0.6 }} className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => navigate('/dashboard/bookings')}
-                className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
-              >
-                Open booking flow
-                <ArrowRight className="h-4 w-4" />
-              </button>
-              <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/75 px-4 py-3 text-sm font-semibold text-slate-700 backdrop-blur">
-                <Waves className="h-4 w-4 text-emerald-600" />
-                Live coverage: {analytics.coverage}%
+      {isRegularUser ? (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45 }}
+          className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm"
+        >
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-700">
+                <Building2 className="h-3.5 w-3.5" />
+                Available resources
               </div>
-            </motion.div>
+              <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+                Find a space and book it fast.
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-600">
+                Browse active campus facilities first, compare capacity and location quickly, and move straight into the booking flow.
+              </p>
+            </div>
 
-            <motion.div variants={stagger} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {[
-                { label: 'Portfolio', value: analytics.total, tone: 'bg-white/88 border-white/80 text-slate-950', meta: 'Resources indexed' },
-                { label: 'Coverage', value: `${analytics.coverage}%`, tone: 'bg-emerald-50/90 border-emerald-100 text-emerald-900', meta: 'Ready for use' },
-                { label: 'Peak Window', value: analytics.peakWindow?.[0] ?? 'Open', tone: 'bg-slate-950 border-slate-900 text-white', meta: analytics.peakWindow ? `${analytics.peakWindow[1]} starts` : 'No trend yet' },
-                { label: 'Avg Capacity', value: analytics.avgCapacity, tone: 'bg-amber-50/90 border-amber-100 text-amber-950', meta: 'Seats per space' },
-              ].map((item) => (
-                <motion.div
-                  key={item.label}
-                  variants={fadeUp}
-                  transition={{ duration: 0.45 }}
-                  className={`rounded-3xl border p-4 shadow-sm ${item.tone}`}
-                >
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] opacity-70">{item.label}</p>
-                  <p className="mt-2 text-3xl font-black">{item.value}</p>
-                  <p className="mt-1 text-xs font-semibold opacity-75">{item.meta}</p>
-                </motion.div>
-              ))}
-            </motion.div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Available</p>
+                <p className="mt-1 text-2xl font-black text-slate-950">{analytics.active}</p>
+              </div>
+              <div className="rounded-2xl bg-emerald-50 px-4 py-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-700">Peak time</p>
+                <p className="mt-1 text-2xl font-black text-emerald-950">{analytics.peakWindow?.[0] ?? 'Open'}</p>
+              </div>
+              <div className="rounded-2xl bg-sky-50 px-4 py-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-sky-700">Avg seats</p>
+                <p className="mt-1 text-2xl font-black text-sky-950">{analytics.avgCapacity}</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      ) : (
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={stagger}
+          className="relative overflow-hidden rounded-[2.25rem] border border-slate-200 bg-[linear-gradient(135deg,#f3f8ec_0%,#fffdf7_33%,#eef6ff_100%)] shadow-[0_30px_80px_-30px_rgba(15,23,42,0.28)]"
+        >
+          <div className="absolute inset-0">
+            <GradientDots
+              duration={20}
+              colorCycleDuration={10}
+              dotSize={8}
+              spacing={22}
+              backgroundColor="rgba(255,255,255,0.24)"
+              className="pointer-events-none opacity-60 mix-blend-soft-light [mask-image:radial-gradient(circle_at_center,black,transparent_78%)]"
+            />
+            <motion.div
+              animate={{ x: [0, 16, 0], y: [0, -10, 0] }}
+              transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute left-[-4rem] top-[-3rem] h-48 w-48 rounded-full bg-emerald-200/45 blur-3xl"
+            />
+            <motion.div
+              animate={{ x: [0, -18, 0], y: [0, 16, 0] }}
+              transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute right-[-2rem] top-[2rem] h-56 w-56 rounded-full bg-sky-200/40 blur-3xl"
+            />
+            <motion.div
+              animate={{ x: [0, 20, 0] }}
+              transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute bottom-[-4rem] left-[30%] h-56 w-56 rounded-full bg-amber-100/60 blur-3xl"
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.72),rgba(255,255,255,0.18))]" />
           </div>
 
-          <motion.div variants={stagger} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-            <motion.div variants={fadeUp} transition={{ duration: 0.55 }} className="rounded-[1.9rem] border border-white/70 bg-white/85 p-5 shadow-lg shadow-slate-200/50 backdrop-blur">
-              <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-blue-100 p-3 text-blue-700">
-                  <BarChart3 className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Demand Leader</p>
-                  <h2 className="mt-1 text-lg font-black tracking-tight text-slate-950">{analytics.busiest?.facility.name ?? 'No demand yet'}</h2>
-                </div>
-              </div>
-              <p className="mt-4 text-sm font-medium leading-6 text-slate-600">
-                {analytics.busiest
-                  ? `${analytics.busiest.bookings} bookings keep this facility at the front of current demand.`
-                  : 'Booking behavior will appear here once requests start building up.'}
-              </p>
-            </motion.div>
+          <div className="relative grid gap-8 p-6 sm:p-8 xl:grid-cols-[1.15fr_0.85fr] xl:p-10">
+            <div className="space-y-6">
+              <motion.div variants={fadeUp} transition={{ duration: 0.5 }} className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.24em] text-emerald-700 backdrop-blur">
+                <Sparkles className="h-3.5 w-3.5" />
+                Resource Experience Layer
+              </motion.div>
 
-            <motion.div variants={fadeUp} transition={{ duration: 0.6 }} className="rounded-[1.9rem] border border-white/70 bg-slate-950 p-5 text-white shadow-lg shadow-slate-300/40">
-              <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-white/10 p-3 text-amber-300">
-                  <AlertTriangle className="h-5 w-5" />
+              <motion.div variants={fadeUp} transition={{ duration: 0.55 }} className="space-y-4">
+                <h1 className="max-w-4xl text-4xl font-black tracking-tight text-slate-950 sm:text-5xl xl:text-6xl">
+                  A premium facilities cockpit for smarter campus operations.
+                </h1>
+                <p className="max-w-2xl text-sm font-medium leading-7 text-slate-600 sm:text-base">
+                  Manage facilities through a polished control surface that blends analytics, demand signals, and resource actions into one high-clarity workspace.
+                </p>
+              </motion.div>
+
+              <motion.div variants={fadeUp} transition={{ duration: 0.6 }} className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigate('/dashboard/bookings')}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
+                >
+                  Open booking flow
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/75 px-4 py-3 text-sm font-semibold text-slate-700 backdrop-blur">
+                  <Waves className="h-4 w-4 text-emerald-600" />
+                  Live coverage: {analytics.coverage}%
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Maintenance Watch</p>
-                  <h2 className="mt-1 text-lg font-black tracking-tight">{analytics.riskiest?.facility.name ?? 'No active risk'}</h2>
+              </motion.div>
+
+              <motion.div
+                variants={fadeUp}
+                transition={{ duration: 0.65 }}
+                className="grid gap-3 rounded-[1.8rem] border border-white/70 bg-white/55 p-4 shadow-sm backdrop-blur sm:grid-cols-3"
+              >
+                <div className="rounded-2xl bg-slate-950 px-4 py-4 text-white">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Fastest signal</p>
+                  <p className="mt-2 text-lg font-black">{analytics.busiest?.facility.name ?? 'No demand yet'}</p>
+                  <p className="mt-1 text-xs font-semibold text-slate-400">Most requested resource</p>
                 </div>
-              </div>
-              <p className="mt-4 text-sm font-medium leading-6 text-slate-300">
-                {analytics.riskiest
-                  ? `${analytics.riskiest.activeTickets} active issue${analytics.riskiest.activeTickets === 1 ? '' : 's'} currently push this resource into the highest risk band.`
-                  : 'No active support signals are being pulled from unresolved facility tickets.'}
-              </p>
+                <div className="rounded-2xl bg-white/80 px-4 py-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Support watch</p>
+                  <p className="mt-2 text-lg font-black text-slate-950">{analytics.riskiest?.facility.name ?? 'Stable'}</p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">Highest current maintenance pressure</p>
+                </div>
+                <div className="rounded-2xl bg-emerald-50/90 px-4 py-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-700">Booking pulse</p>
+                  <p className="mt-2 text-lg font-black text-emerald-950">{analytics.peakWindow?.[0] ?? 'Open window'}</p>
+                  <p className="mt-1 text-xs font-semibold text-emerald-800/70">Busiest reservation start period</p>
+                </div>
+              </motion.div>
+
+              <motion.div variants={stagger} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {[
+                  { label: 'Portfolio', value: analytics.total, tone: 'bg-white/88 border-white/80 text-slate-950', meta: 'Resources indexed' },
+                  { label: 'Coverage', value: `${analytics.coverage}%`, tone: 'bg-emerald-50/90 border-emerald-100 text-emerald-900', meta: 'Ready for use' },
+                  { label: 'Peak Window', value: analytics.peakWindow?.[0] ?? 'Open', tone: 'bg-slate-950 border-slate-900 text-white', meta: analytics.peakWindow ? `${analytics.peakWindow[1]} starts` : 'No trend yet' },
+                  { label: 'Avg Capacity', value: analytics.avgCapacity, tone: 'bg-amber-50/90 border-amber-100 text-amber-950', meta: 'Seats per space' },
+                ].map((item) => (
+                  <motion.div
+                    key={item.label}
+                    variants={fadeUp}
+                    transition={{ duration: 0.45 }}
+                    className={`rounded-3xl border p-4 shadow-sm ${item.tone}`}
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] opacity-70">{item.label}</p>
+                    <p className="mt-2 text-3xl font-black">{item.value}</p>
+                    <p className="mt-1 text-xs font-semibold opacity-75">{item.meta}</p>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </div>
+
+            <motion.div variants={stagger} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+              <motion.div variants={fadeUp} transition={{ duration: 0.55 }} className="rounded-[1.9rem] border border-white/70 bg-white/85 p-5 shadow-lg shadow-slate-200/50 backdrop-blur">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-2xl bg-blue-100 p-3 text-blue-700">
+                    <BarChart3 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Demand Leader</p>
+                    <h2 className="mt-1 text-lg font-black tracking-tight text-slate-950">{analytics.busiest?.facility.name ?? 'No demand yet'}</h2>
+                  </div>
+                </div>
+                <p className="mt-4 text-sm font-medium leading-6 text-slate-600">
+                  {analytics.busiest
+                    ? `${analytics.busiest.bookings} bookings keep this facility at the front of current demand.`
+                    : 'Booking behavior will appear here once requests start building up.'}
+                </p>
+              </motion.div>
+
+              <motion.div variants={fadeUp} transition={{ duration: 0.6 }} className="rounded-[1.9rem] border border-white/70 bg-slate-950 p-5 text-white shadow-lg shadow-slate-300/40">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-2xl bg-white/10 p-3 text-amber-300">
+                    <AlertTriangle className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Maintenance Watch</p>
+                    <h2 className="mt-1 text-lg font-black tracking-tight">{analytics.riskiest?.facility.name ?? 'No active risk'}</h2>
+                  </div>
+                </div>
+                <p className="mt-4 text-sm font-medium leading-6 text-slate-300">
+                  {analytics.riskiest
+                    ? `${analytics.riskiest.activeTickets} active issue${analytics.riskiest.activeTickets === 1 ? '' : 's'} currently push this resource into the highest risk band.`
+                    : 'No active support signals are being pulled from unresolved facility tickets.'}
+                </p>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        </div>
-      </motion.div>
+          </div>
+        </motion.div>
+      )}
 
       <div className={`grid gap-6 ${canManage ? 'xl:grid-cols-[minmax(0,1.35fr)_420px]' : ''}`}>
         <div className="space-y-6">
@@ -401,13 +469,25 @@ export default function FacilitiesPage() {
             {filtered.map((facility) => {
               const facilityBookings = bookings.filter((booking) => booking.facilityId === facility.id).length;
               const utilization = Math.min(100, Math.round(facilityBookings.length * 16 + Math.min(facility.capacity, 120) / 4));
+              const suitabilityLabel =
+                facility.capacity >= 120
+                  ? 'Best for large events'
+                  : facility.capacity >= 50
+                    ? 'Best for medium groups'
+                    : facility.capacity >= 20
+                      ? 'Best for workshops'
+                      : 'Best for small sessions';
 
               return (
                 <motion.article
                   key={facility.id}
                   variants={fadeUp}
                   transition={{ duration: 0.4 }}
-                  className="group overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/70"
+                  className={`group overflow-hidden rounded-[2rem] border bg-white transition duration-300 hover:-translate-y-1 ${
+                    isRegularUser
+                      ? 'border-slate-200 shadow-[0_18px_45px_-26px_rgba(15,23,42,0.28)] hover:shadow-[0_28px_55px_-24px_rgba(15,23,42,0.22)]'
+                      : 'border-slate-200 shadow-sm hover:shadow-xl hover:shadow-slate-200/70'
+                  }`}
                 >
                   <div className="relative">
                     {facility.image ? (
@@ -427,35 +507,47 @@ export default function FacilitiesPage() {
                       </span>
                     </div>
 
-                    <div className="absolute inset-x-4 bottom-4 rounded-2xl bg-slate-950/85 p-3 text-white backdrop-blur">
+                    <div className={`absolute inset-x-4 bottom-4 rounded-2xl p-3 text-white backdrop-blur ${
+                      isRegularUser ? 'bg-white/18 ring-1 ring-white/25' : 'bg-slate-950/85'
+                    }`}>
                       <div className="flex items-center justify-between gap-4">
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-300">Utilization</p>
+                          <p className={`text-[10px] font-bold uppercase tracking-[0.22em] ${isRegularUser ? 'text-white/80' : 'text-slate-300'}`}>Utilization</p>
                           <p className="mt-1 text-xl font-black">{utilization}%</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-300">Bookings</p>
+                          <p className={`text-[10px] font-bold uppercase tracking-[0.22em] ${isRegularUser ? 'text-white/80' : 'text-slate-300'}`}>Bookings</p>
                           <p className="mt-1 text-xl font-black">{facilityBookings}</p>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-5 p-5">
-                    <div>
+                  <div className={`space-y-5 p-5 ${isRegularUser ? 'bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)]' : ''}`}>
+                    <div className="space-y-3">
+                      {isRegularUser && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">
+                            Ready to book
+                          </span>
+                          <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                            {suitabilityLabel}
+                          </span>
+                        </div>
+                      )}
                       <h3 className="text-2xl font-black tracking-tight text-slate-950">{facility.name}</h3>
                       <p className="mt-2 text-sm leading-6 text-slate-600">{facility.description}</p>
                     </div>
 
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-2xl bg-slate-50 p-3">
+                    <div className={`grid gap-3 sm:grid-cols-2 ${isRegularUser ? 'lg:grid-cols-2' : ''}`}>
+                      <div className={`rounded-2xl p-3 ${isRegularUser ? 'border border-slate-200 bg-white shadow-sm' : 'bg-slate-50'}`}>
                         <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
                           <MapPin className="h-3.5 w-3.5" />
                           Location
                         </p>
                         <p className="mt-2 text-sm font-semibold text-slate-700">{facility.location}</p>
                       </div>
-                      <div className="rounded-2xl bg-slate-50 p-3">
+                      <div className={`rounded-2xl p-3 ${isRegularUser ? 'border border-slate-200 bg-white shadow-sm' : 'bg-slate-50'}`}>
                         <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
                           <Users className="h-3.5 w-3.5" />
                           Capacity
@@ -463,6 +555,21 @@ export default function FacilitiesPage() {
                         <p className="mt-2 text-sm font-semibold text-slate-700">{facility.capacity} seats</p>
                       </div>
                     </div>
+
+                    {isRegularUser && (
+                      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Quick fit</p>
+                            <p className="mt-1 text-sm font-bold text-slate-950">{suitabilityLabel}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Demand</p>
+                            <p className="mt-1 text-sm font-bold text-slate-950">{facilityBookings} recent booking{facilityBookings === 1 ? '' : 's'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
@@ -477,15 +584,25 @@ export default function FacilitiesPage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-3">
+                    <div className={`flex flex-wrap gap-3 ${isRegularUser ? 'items-center rounded-2xl border border-slate-200 bg-white p-3 shadow-sm' : ''}`}>
                       <button
                         type="button"
                         onClick={() => navigate('/dashboard/bookings')}
-                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
+                        className={`inline-flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition ${
+                          isRegularUser
+                            ? 'bg-emerald-600 text-white hover:bg-emerald-500'
+                            : 'bg-slate-950 text-white hover:bg-slate-800'
+                        }`}
                       >
                         <Clock3 className="h-4 w-4" />
-                        Book resource
+                        {isRegularUser ? 'Book this facility' : 'Book resource'}
                       </button>
+
+                      {isRegularUser && (
+                        <div className="inline-flex items-center rounded-2xl bg-slate-100 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+                          Fast access
+                        </div>
+                      )}
 
                       {canManage && (
                         <button
