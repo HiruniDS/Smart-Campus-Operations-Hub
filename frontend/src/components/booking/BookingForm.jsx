@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createBooking } from '../../api/bookingApi';
 import AvailabilityPanel from './AvailabilityPanel';
 import { BkLabel, BkFieldError, BkServerError } from './BkUI';
@@ -79,16 +79,16 @@ const STYLE = `
 /* ─── Validation ──────────────────────────────────────── */
 function validate(form) {
   const e = {};
-  if (!form.resourceId.trim())    e.resourceId = 'Resource ID is required.';
-  if (!form.resourceName.trim())  e.resourceName = 'Resource name is required.';
-  if (!form.resourceType)         e.resourceType = 'Resource type is required.';
-  if (!form.location.trim())      e.location = 'Location is required.';
-  if (!form.bookingDate)          e.bookingDate = 'Booking date is required.';
-  if (!form.startTime)            e.startTime = 'Start time is required.';
-  if (!form.endTime)              e.endTime = 'End time is required.';
+  if (!form.resourceId.trim()) e.resourceId = 'Resource ID is required.';
+  if (!form.resourceName.trim()) e.resourceName = 'Resource name is required.';
+  if (!form.resourceType) e.resourceType = 'Resource type is required.';
+  if (!form.location.trim()) e.location = 'Location is required.';
+  if (!form.bookingDate) e.bookingDate = 'Booking date is required.';
+  if (!form.startTime) e.startTime = 'Start time is required.';
+  if (!form.endTime) e.endTime = 'End time is required.';
   if (form.startTime && form.endTime && form.endTime <= form.startTime)
     e.endTime = 'End time must be after start time.';
-  if (!form.purpose.trim())       e.purpose = 'Purpose is required.';
+  if (!form.purpose.trim()) e.purpose = 'Purpose is required.';
   if (!form.expectedAttendees || Number(form.expectedAttendees) < 1)
     e.expectedAttendees = 'Must be at least 1.';
   return e;
@@ -144,12 +144,40 @@ function Grid2({ children }) {
 ══════════════════════════════════════════════════════════ */
 export default function BookingForm() {
   const navigate = useNavigate();
-  const [form,        setForm]        = useState(INITIAL);
-  const [errors,      setErrors]      = useState({});
-  const [submitting,  setSubmitting]  = useState(false);
+  const [searchParams] = useSearchParams();
+
+  // Pre-fill from facility link (query params)
+  const preFilledFacilityId = searchParams.get('facilityId') || '';
+  const preFilledFacilityName = searchParams.get('facilityName') || '';
+  const preFilledResourceType = searchParams.get('resourceType') || '';
+  const preFilledLocation = searchParams.get('location') || '';
+  const isFacilityPreFilled = !!preFilledFacilityId;
+
+  const [form, setForm] = useState({
+    ...INITIAL,
+    resourceId: preFilledFacilityId,
+    resourceName: preFilledFacilityName,
+    resourceType: preFilledResourceType,
+    location: preFilledLocation,
+  });
+  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState('');
-  const [success,     setSuccess]     = useState(false);
-  const [showAvail,   setShowAvail]   = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [showAvail, setShowAvail] = useState(false);
+
+  // Sync if user navigates between facilities without unmounting
+  useEffect(() => {
+    if (preFilledFacilityId) {
+      setForm((f) => ({
+        ...f,
+        resourceId: preFilledFacilityId,
+        resourceName: preFilledFacilityName,
+        resourceType: preFilledResourceType,
+        location: preFilledLocation,
+      }));
+    }
+  }, [preFilledFacilityId, preFilledFacilityName, preFilledResourceType, preFilledLocation]);
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
@@ -230,17 +258,36 @@ export default function BookingForm() {
           {/* ── Section: Resource Information ─────────── */}
           <Section
             title="Resource Information"
-            icon={<><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>}
+            icon={<><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></>}
           >
+            {isFacilityPreFilled && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '10px 14px', marginBottom: 16,
+                background: '#F0FDF4', borderRadius: 10,
+                border: '1.5px solid #A7F3D0', fontSize: 13,
+                color: '#065F46', fontWeight: 600,
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Facility pre-selected from the catalogue. Fields below are locked.
+              </div>
+            )}
             <Grid2>
               <Field label="Resource ID" required error={errors.resourceId}>
                 <input className={ic(!!errors.resourceId)} value={form.resourceId}
-                  onChange={(e) => set('resourceId', e.target.value)}
+                  readOnly={isFacilityPreFilled}
+                  style={isFacilityPreFilled ? { background: '#F9FAFB', color: '#6B7280', cursor: 'not-allowed' } : {}}
+                  onChange={(e) => !isFacilityPreFilled && set('resourceId', e.target.value)}
                   placeholder="e.g. HALL-A1" />
               </Field>
               <Field label="Resource Name" required error={errors.resourceName}>
                 <input className={ic(!!errors.resourceName)} value={form.resourceName}
-                  onChange={(e) => set('resourceName', e.target.value)}
+                  readOnly={isFacilityPreFilled}
+                  style={isFacilityPreFilled ? { background: '#F9FAFB', color: '#6B7280', cursor: 'not-allowed' } : {}}
+                  onChange={(e) => !isFacilityPreFilled && set('resourceName', e.target.value)}
                   placeholder="e.g. Engineering Lecture Hall A" />
               </Field>
             </Grid2>
@@ -250,23 +297,26 @@ export default function BookingForm() {
                 <div style={{ position: 'relative' }}>
                   <select className={`${ic(!!errors.resourceType)} bkf-select`}
                     value={form.resourceType}
-                    onChange={(e) => set('resourceType', e.target.value)}>
+                    disabled={isFacilityPreFilled}
+                    style={isFacilityPreFilled ? { background: '#F9FAFB', color: '#6B7280', cursor: 'not-allowed' } : {}}
+                    onChange={(e) => !isFacilityPreFilled && set('resourceType', e.target.value)}>
                     <option value="">Select type…</option>
                     {RESOURCE_TYPES.map((t) => (
                       <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
                     ))}
                   </select>
-                  {/* custom caret */}
-                  <svg style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }}
+                  <svg style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
                     width="14" height="14" viewBox="0 0 24 24" fill="none"
                     stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="6 9 12 15 18 9"/>
+                    <polyline points="6 9 12 15 18 9" />
                   </svg>
                 </div>
               </Field>
               <Field label="Location" required error={errors.location}>
                 <input className={ic(!!errors.location)} value={form.location}
-                  onChange={(e) => set('location', e.target.value)}
+                  readOnly={isFacilityPreFilled}
+                  style={isFacilityPreFilled ? { background: '#F9FAFB', color: '#6B7280', cursor: 'not-allowed' } : {}}
+                  onChange={(e) => !isFacilityPreFilled && set('location', e.target.value)}
                   placeholder="e.g. Block C, Floor 2" />
               </Field>
             </Grid2>
@@ -275,7 +325,7 @@ export default function BookingForm() {
           {/* ── Section: Schedule ─────────────────────── */}
           <Section
             title="Schedule"
-            icon={<><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>}
+            icon={<><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></>}
           >
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Field label="Date" required error={errors.bookingDate}>
@@ -298,7 +348,7 @@ export default function BookingForm() {
                 onClick={() => setShowAvail((v) => !v)}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
                 {showAvail ? 'Hide' : 'Check'} Availability
               </button>
@@ -319,7 +369,7 @@ export default function BookingForm() {
           {/* ── Section: Details ──────────────────────── */}
           <Section
             title="Details"
-            icon={<><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></>}
+            icon={<><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></>}
           >
             <Field label="Purpose" required error={errors.purpose}>
               <textarea
@@ -357,7 +407,7 @@ export default function BookingForm() {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
                     style={{ animation: 'spin 1s linear infinite' }}>
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                   </svg>
                   Submitting…
                 </>
@@ -365,8 +415,8 @@ export default function BookingForm() {
                 <>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="22" y1="2" x2="11" y2="13"/>
-                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    <line x1="22" y1="2" x2="11" y2="13" />
+                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
                   </svg>
                   Submit Booking Request
                 </>

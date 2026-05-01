@@ -30,6 +30,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -321,5 +323,24 @@ public class TicketServiceImpl implements TicketService {
         response.setFileName(attachment.getFileName());
         response.setFilePath(attachment.getFilePath());
         return response;
+    }
+
+    @Override
+    public Resource downloadAttachment(String ticketId, String attachmentId) {
+        Ticket ticket = getTicket(ticketId);
+        Attachment attachment = ticket.getAttachments().stream()
+                .filter(a -> a.getId().equals(attachmentId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Attachment not found: " + attachmentId));
+        try {
+            Path filePath = Paths.get(attachment.getFilePath());
+            Resource resource = new UrlResource(filePath.toUri());
+            if (!resource.exists() || !resource.isReadable()) {
+                throw new ResourceNotFoundException("File not found or not readable");
+            }
+            return resource;
+        } catch (java.net.MalformedURLException e) {
+            throw new ResourceNotFoundException("Could not resolve file path");
+        }
     }
 }

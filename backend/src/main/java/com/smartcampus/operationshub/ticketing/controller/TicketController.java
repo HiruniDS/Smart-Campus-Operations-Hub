@@ -11,7 +11,13 @@ import com.smartcampus.operationshub.ticketing.entity.TicketStatus;
 import com.smartcampus.operationshub.ticketing.service.TicketService;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -123,6 +129,24 @@ public class TicketController {
         boolean isAdmin = hasRole(authentication, "ROLE_ADMIN");
         boolean isTechnician = hasRole(authentication, "ROLE_TECHNICIAN");
         return ResponseEntity.ok(ticketService.addAttachments(id, files, authentication.getName(), isAdmin, isTechnician));
+    }
+
+    @GetMapping("/{id}/attachments/{attachmentId}")
+    @PreAuthorize("hasAnyRole('USER','ADMIN','TECHNICIAN')")
+    public ResponseEntity<Resource> downloadAttachment(@PathVariable String id,
+                                                       @PathVariable String attachmentId) {
+        Resource resource = ticketService.downloadAttachment(id, attachmentId);
+        String contentType = "application/octet-stream";
+        try {
+            String probed = Files.probeContentType(Paths.get(resource.getURI()));
+            if (probed != null) contentType = probed;
+        } catch (IOException e) {
+            // fall back to octet-stream
+        }
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
     }
 
     private boolean hasRole(Authentication authentication, String role) {

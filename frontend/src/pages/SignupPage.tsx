@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { motion } from 'motion/react';
-import { 
-  ShieldCheck, 
-  UserCircle, 
-  Wrench, 
+import {
+  ShieldCheck,
+  UserCircle,
+  Wrench,
   Loader2,
   Lock,
   Mail,
@@ -24,7 +24,7 @@ export default function SignupPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const [isRegistering, setIsRegistering] = useState(false);
-  
+
   // Form state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -37,12 +37,16 @@ export default function SignupPage() {
       toast.error('Please fill in all fields');
       return;
     }
-    
+
     setIsRegistering(true);
     try {
       await register(name, email, password, selectedRole);
       toast.success('Account created successfully!');
-      navigate('/dashboard');
+      if (selectedRole === 'TECHNICIAN') {
+        navigate('/tickets');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Registration failed');
       setIsRegistering(false);
@@ -57,11 +61,11 @@ export default function SignupPage() {
 
   return (
     <div className="relative min-h-screen mesh-gradient flex items-center justify-center p-6 text-slate-900 overflow-hidden font-sans">
-      
+
       <div className="w-full max-w-lg bg-white/60 backdrop-blur-3xl rounded-[2.5rem] border border-white/50 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] overflow-hidden">
         <div className="flex flex-col p-8 lg:p-12 bg-white">
-          
-          <button 
+
+          <button
             onClick={() => navigate('/login')}
             className="flex items-center gap-2 text-slate-400 hover:text-blue-600 transition-colors mb-8 group"
           >
@@ -84,9 +88,9 @@ export default function SignupPage() {
               <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Full Name</Label>
               <div className="relative group">
                 <UserIcon className="absolute left-3 top-3.5 h-4 w-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                <Input 
-                  type="text" 
-                  placeholder="John Doe" 
+                <Input
+                  type="text"
+                  placeholder="John Doe"
                   className="pl-10 h-12 bg-slate-50/50 border-slate-100 focus:bg-white transition-all rounded-xl"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -99,9 +103,9 @@ export default function SignupPage() {
               <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Email Address</Label>
               <div className="relative group">
                 <Mail className="absolute left-3 top-3.5 h-4 w-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                <Input 
-                  type="email" 
-                  placeholder="j.doe@smartcampus.edu" 
+                <Input
+                  type="email"
+                  placeholder="j.doe@smartcampus.edu"
                   className="pl-10 h-12 bg-slate-50/50 border-slate-100 focus:bg-white transition-all rounded-xl"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -114,9 +118,9 @@ export default function SignupPage() {
               <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Password</Label>
               <div className="relative group">
                 <Lock className="absolute left-3 top-3.5 h-4 w-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                <Input 
-                  type="password" 
-                  placeholder="••••••••" 
+                <Input
+                  type="password"
+                  placeholder="••••••••"
                   className="pl-10 h-12 bg-slate-50/50 border-slate-100 focus:bg-white transition-all rounded-xl"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -133,11 +137,10 @@ export default function SignupPage() {
                     key={r.role}
                     type="button"
                     onClick={() => setSelectedRole(r.role)}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${
-                      selectedRole === r.role 
-                        ? 'bg-blue-50 border-blue-200 text-blue-600' 
+                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${selectedRole === r.role
+                        ? 'bg-blue-50 border-blue-200 text-blue-600'
                         : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'
-                    }`}
+                      }`}
                   >
                     {r.icon}
                     <span className="text-[10px] font-bold uppercase tracking-tight">{r.label}</span>
@@ -146,9 +149,9 @@ export default function SignupPage() {
               </div>
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full h-12 bg-black text-white hover:bg-slate-800 rounded-xl font-bold shadow-lg shadow-black/10 transition-all hover:-translate-y-0.5" 
+            <Button
+              type="submit"
+              className="w-full h-12 bg-black text-white hover:bg-slate-800 rounded-xl font-bold shadow-lg shadow-black/10 transition-all hover:-translate-y-0.5"
               disabled={isRegistering}
             >
               {isRegistering ? <Loader2 className="h-5 w-5 animate-spin" /> : <div className="flex items-center gap-2">Initialize Account <ArrowRight className="h-4 w-4" /></div>}

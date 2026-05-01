@@ -47,8 +47,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isLoading: false,
       });
 
-      // Clean URL
+      // Clean URL and redirect by role
       window.history.replaceState({}, document.title, window.location.pathname);
+      if (oauthUser.role === 'TECHNICIAN') {
+        window.location.replace('/tickets');
+      } else {
+        window.location.replace('/dashboard');
+      }
       return;
     }
 

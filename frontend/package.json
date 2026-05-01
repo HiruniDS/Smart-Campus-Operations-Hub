@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "predev": "node check-backend.cjs",
-    "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "npx --no vite",
+    "build": "npx --no vite build",
+    "preview": "npx --no vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },

@@ -19,7 +19,7 @@ export default function TicketDetailsPage() {
   const [error, setError] = useState('');
   const [commentText, setCommentText] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('IN_PROGRESS');
-  const [assignee, setAssignee] = useState('tech1');
+  const [assignee, setAssignee] = useState('');
 
   const canAssign = currentUser.role === 'ADMIN';
   const canUpdateStatus = currentUser.role === 'ADMIN' || currentUser.role === 'TECHNICIAN';
@@ -114,11 +114,12 @@ export default function TicketDetailsPage() {
         <article className="card">
           <h3>Assign Technician</h3>
           <div className="inline-actions">
-            <select value={assignee} onChange={(e) => setAssignee(e.target.value)}>
-              <option value="tech1">tech1</option>
-              <option value="tech2">tech2</option>
-            </select>
-            <button onClick={handleAssign}>Assign</button>
+            <input
+              value={assignee}
+              onChange={(e) => setAssignee(e.target.value)}
+              placeholder="Technician email"
+            />
+            <button onClick={handleAssign} disabled={!assignee.trim()}>Assign</button>
           </div>
         </article>
       )}
@@ -144,7 +145,15 @@ export default function TicketDetailsPage() {
         )}
         <ul className="list">
           {ticket.attachments.map((attachment) => (
-            <li key={attachment.id}>{attachment.fileName}</li>
+            <li key={attachment.id}>
+              <a
+                href={`/api/tickets/${ticket.id}/attachments/${attachment.id}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {attachment.fileName}
+              </a>
+            </li>
           ))}
         </ul>
       </article>

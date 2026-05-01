@@ -6,10 +6,10 @@ import { CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  ShieldCheck, 
-  UserCircle, 
-  Wrench, 
+import {
+  ShieldCheck,
+  UserCircle,
+  Wrench,
   Loader2,
   Lock,
   Mail,
@@ -28,7 +28,7 @@ export default function LoginPage() {
   const [isAuthFlowOpen, setIsAuthFlowOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  
+
   // Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,12 +39,19 @@ export default function LoginPage() {
       toast.error('Please enter your credentials');
       return;
     }
-    
+
     setIsLoggingIn(true);
     try {
       await login(email, password);
       toast.success('Welcome back to SmartCampus');
-      navigate('/dashboard');
+      // Role is available on the context user after login resolves
+      const savedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const role = savedUser?.role;
+      if (role === 'TECHNICIAN') {
+        navigate('/tickets');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Authentication rejected. Verify credentials.');
       setIsLoggingIn(false);
@@ -61,7 +68,11 @@ export default function LoginPage() {
     try {
       await googleLogin(role);
       toast.success(`Authenticated securely as ${role} (Google)`);
-      navigate('/dashboard');
+      if (role === 'TECHNICIAN') {
+        navigate('/tickets');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       toast.error('OAuth handshake failed.');
       setIsLoggingIn(false);
@@ -69,32 +80,32 @@ export default function LoginPage() {
   };
 
   const roles: { role: UserRole; icon: React.ReactNode; label: string; desc: string }[] = [
-    { 
-      role: 'USER', 
-      icon: <UserCircle className="h-4 w-4" />, 
-      label: 'Academic User', 
-      desc: 'Students, Faculty & Staff' 
+    {
+      role: 'USER',
+      icon: <UserCircle className="h-4 w-4" />,
+      label: 'Academic User',
+      desc: 'Students, Faculty & Staff'
     },
-    { 
-      role: 'TECHNICIAN', 
-      icon: <Wrench className="h-4 w-4" />, 
-      label: 'Campus Maintenance', 
-      desc: 'Technical & Service Access' 
+    {
+      role: 'TECHNICIAN',
+      icon: <Wrench className="h-4 w-4" />,
+      label: 'Campus Maintenance',
+      desc: 'Technical & Service Access'
     },
-    { 
-      role: 'ADMIN', 
-      icon: <ShieldCheck className="h-4 w-4" />, 
-      label: 'Operations Admin', 
-      desc: 'Core System Governance' 
+    {
+      role: 'ADMIN',
+      icon: <ShieldCheck className="h-4 w-4" />,
+      label: 'Operations Admin',
+      desc: 'Core System Governance'
     },
   ];
 
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
-      transition: { 
+      transition: {
         duration: 0.6,
         staggerChildren: 0.1
       }
@@ -108,16 +119,16 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen mesh-gradient flex items-center justify-center p-6 text-slate-900 overflow-hidden selection:bg-blue-600 selection:text-white">
-      
+
       {/* Background Decorative Element */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400/10 blur-[120px] rounded-full animate-pulse" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-indigo-400/10 blur-[120px] rounded-full animate-pulse decoration-3000" />
-      
+
       <div className="w-full max-w-5xl grid lg:grid-cols-2 bg-white/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/50 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] overflow-hidden">
-        
+
         {/* Left Aspect: Branding & Aesthetic Content */}
         <div className="hidden lg:flex flex-col justify-between p-16 bg-white/20 relative">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="flex items-center gap-2"
@@ -129,45 +140,45 @@ export default function LoginPage() {
           </motion.div>
 
           <div>
-             <motion.div 
-               variants={containerVariants}
-               initial="hidden"
-               animate="visible"
-               className="space-y-6"
-             >
-               <motion.div variants={itemVariants} className="flex items-center gap-2 text-blue-600">
-                 <Sparkles className="h-4 w-4" />
-                 <span className="text-xs font-bold uppercase tracking-[0.2em]">Next-Gen Operations</span>
-               </motion.div>
-               <motion.h1 
-                 variants={itemVariants}
-                 className="text-6xl font-extrabold tracking-tighter leading-[0.9] text-slate-950"
-               >
-                 Connected <br />
-                 University.
-               </motion.h1>
-               <motion.p 
-                 variants={itemVariants}
-                 className="text-lg text-slate-600 font-medium leading-relaxed max-w-sm"
-               >
-                 Manage campus bookings and maintenance requests in one simple, secure hub.
-               </motion.p>
-             </motion.div>
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="space-y-6"
+            >
+              <motion.div variants={itemVariants} className="flex items-center gap-2 text-blue-600">
+                <Sparkles className="h-4 w-4" />
+                <span className="text-xs font-bold uppercase tracking-[0.2em]">Next-Gen Operations</span>
+              </motion.div>
+              <motion.h1
+                variants={itemVariants}
+                className="text-6xl font-extrabold tracking-tighter leading-[0.9] text-slate-950"
+              >
+                Connected <br />
+                University.
+              </motion.h1>
+              <motion.p
+                variants={itemVariants}
+                className="text-lg text-slate-600 font-medium leading-relaxed max-w-sm"
+              >
+                Manage campus bookings and maintenance requests in one simple, secure hub.
+              </motion.p>
+            </motion.div>
 
-             <motion.div 
-               initial={{ opacity: 0 }}
-               animate={{ opacity: 1 }}
-               transition={{ delay: 1 }}
-               className="mt-12 flex items-center gap-4 py-4 px-6 bg-white/40 rounded-2xl border border-white/20 inline-flex shadow-sm"
-             >
-                <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center">
-                  <Fingerprint className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900">Biometric Ready</p>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Identity Secured</p>
-                </div>
-             </motion.div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+              className="mt-12 flex items-center gap-4 py-4 px-6 bg-white/40 rounded-2xl border border-white/20 inline-flex shadow-sm"
+            >
+              <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center">
+                <Fingerprint className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-900">Biometric Ready</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Identity Secured</p>
+              </div>
+            </motion.div>
           </div>
 
           <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-4">
@@ -198,10 +209,10 @@ export default function LoginPage() {
                     <Label htmlFor="email" className="text-xs font-bold text-slate-400 uppercase tracking-widest">Email Address</Label>
                     <div className="relative group">
                       <Mail className="absolute left-3 top-3.5 h-4 w-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                      <Input 
-                        id="email" 
-                        type="email" 
-                        placeholder="email@smartcampus.edu" 
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="email@smartcampus.edu"
                         className="pl-10 h-12 bg-slate-50/50 border-slate-100 focus:bg-white transition-all rounded-xl"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -216,10 +227,10 @@ export default function LoginPage() {
                     </div>
                     <div className="relative group">
                       <Lock className="absolute left-3 top-3.5 h-4 w-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                      <Input 
-                        id="password" 
-                        type="password" 
-                        placeholder="••••••••" 
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
                         className="pl-10 h-12 bg-slate-50/50 border-slate-100 focus:bg-white transition-all rounded-xl"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -227,9 +238,9 @@ export default function LoginPage() {
                       />
                     </div>
                   </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full h-12 bg-black text-white hover:bg-slate-800 rounded-xl font-bold shadow-lg shadow-black/10 transition-all hover:-translate-y-0.5" 
+                  <Button
+                    type="submit"
+                    className="w-full h-12 bg-black text-white hover:bg-slate-800 rounded-xl font-bold shadow-lg shadow-black/10 transition-all hover:-translate-y-0.5"
                     disabled={isLoggingIn}
                   >
                     {isLoggingIn ? <Loader2 className="h-5 w-5 animate-spin" /> : <div className="flex items-center gap-2">Continue Dashboard <ArrowRight className="h-4 w-4" /></div>}
@@ -245,9 +256,9 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <Button 
+                <Button
                   type="button"
-                  variant="outline" 
+                  variant="outline"
                   onClick={startOAuthFlow}
                   className="w-full h-12 bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-3"
                   disabled={isLoggingIn}
@@ -275,7 +286,7 @@ export default function LoginPage() {
 
                 <div className="mt-8 text-center text-sm font-medium text-slate-500">
                   Don&apos;t have an account?{' '}
-                  <button 
+                  <button
                     onClick={() => navigate('/signup')}
                     className="text-blue-600 hover:text-blue-700 font-bold uppercase tracking-widest text-[11px] transition-colors"
                   >
@@ -298,14 +309,14 @@ export default function LoginPage() {
                       </div>
                       <span className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">Gateway Access</span>
                     </div>
-                    <button 
+                    <button
                       onClick={() => setIsAuthFlowOpen(false)}
                       className="p-1.5 hover:bg-slate-50 rounded-lg transition-colors"
                     >
                       <ChevronRight className="h-4 w-4 rotate-180 text-slate-400" />
                     </button>
                   </div>
-                  
+
                   <CardContent className="p-8">
                     <div className="mb-8">
                       <h3 className="text-xl font-extrabold tracking-tight text-slate-900">Choose Profile</h3>
@@ -318,9 +329,8 @@ export default function LoginPage() {
                           key={roleObj.role}
                           onClick={() => handleMockGoogleLogin(roleObj.role)}
                           disabled={isLoggingIn}
-                          className={`group w-full flex items-center justify-between p-4 rounded-2xl border border-transparent bg-slate-50/80 hover:bg-white hover:border-slate-200 hover:shadow-xl hover:shadow-blue-900/5 transition-all duration-300 ${
-                            selectedRole === roleObj.role && isLoggingIn ? 'opacity-50 pointer-events-none' : ''
-                          }`}
+                          className={`group w-full flex items-center justify-between p-4 rounded-2xl border border-transparent bg-slate-50/80 hover:bg-white hover:border-slate-200 hover:shadow-xl hover:shadow-blue-900/5 transition-all duration-300 ${selectedRole === roleObj.role && isLoggingIn ? 'opacity-50 pointer-events-none' : ''
+                            }`}
                         >
                           <div className="flex items-center gap-4 text-left">
                             <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all duration-300">
@@ -354,7 +364,7 @@ export default function LoginPage() {
 
       <div className="fixed bottom-8 left-8 hidden lg:block">
         <div className="flex items-center gap-3">
-          {[1,2,3,4].map(i => <div key={i} className="h-1 w-8 bg-black/10 rounded-full" />)}
+          {[1, 2, 3, 4].map(i => <div key={i} className="h-1 w-8 bg-black/10 rounded-full" />)}
           <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-2">SmartCampus Infrastructure</span>
         </div>
       </div>

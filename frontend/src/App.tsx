@@ -25,7 +25,7 @@ import AdminBookingReviewPage from './pages/booking/AdminBookingReviewPage';
 import AvailabilityViewPage from './pages/booking/AvailabilityViewPage';
 
 // Ticket pages
-import TicketListPage from './pages/TicketListPage';
+import TicketsHubPage from './pages/TicketsHubPage';
 import CreateTicketPage from './pages/CreateTicketPage';
 import TicketDetailsPage from './pages/TicketDetailsPage';
 
@@ -83,10 +83,10 @@ export default function App() {
           <Route path="/bookings/availability" element={<ProtectedRoute><AvailabilityViewPage /></ProtectedRoute>} />
           <Route path="/bookings/:id" element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']}><BookingDetailsPage /></ProtectedRoute>} />
 
-          {/* Ticket Routes */}
-          <Route path="/tickets" element={<ProtectedRoute><TicketListPage /></ProtectedRoute>} />
-          <Route path="/tickets/new" element={<ProtectedRoute><CreateTicketPage /></ProtectedRoute>} />
-          <Route path="/tickets/:id" element={<ProtectedRoute><TicketDetailsPage /></ProtectedRoute>} />
+          {/* Ticket Routes - list/details for TECHNICIAN+ADMIN, new ticket for all authenticated */}
+          <Route path="/tickets" element={<ProtectedRoute allowedRoles={['TECHNICIAN', 'ADMIN', 'USER']}><TicketsHubPage /></ProtectedRoute>} />
+          <Route path="/tickets/new" element={<ProtectedRoute allowedRoles={['USER', 'ADMIN', 'TECHNICIAN']}><CreateTicketPage /></ProtectedRoute>} />
+          <Route path="/tickets/:id" element={<ProtectedRoute allowedRoles={['TECHNICIAN', 'ADMIN', 'USER']}><TicketDetailsPage /></ProtectedRoute>} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

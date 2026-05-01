@@ -1,128 +1,140 @@
-import { useMemo, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { MessageSquare, Plus, Ticket as TicketIcon, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  addTicket,
-  addTicketComment,
-  deleteTicket,
-  getTickets,
-  updateTicketDetails,
-  type TicketAttachment,
-  type Ticket,
-  type TicketPriority,
-  type TicketStatus,
-} from '@/lib/mergedStore';
+  fetchTickets,
+  createTicket as createTicketApi,
+  updateTicket as updateTicketApi,
+  deleteTicket as deleteTicketApi,
+  updateTicketStatus,
+  assignTechnician,
+  addComment as addCommentApi,
+  uploadAttachments,
+} from '../api/ticketApi';
+
+type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' | 'REJECTED';
+type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+interface TicketComment {
+  id: string;
+  content: string;
+  author: string;
+  createdAt: string;
+}
+
+interface TicketAttachment {
+  id: string;
+  fileName: string;
+  filePath: string;
+}
+
+interface Ticket {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  priority: TicketPriority;
+  status: TicketStatus;
+  createdBy: string;
+  assignedTo: string;
+  createdAt: string;
+  comments: TicketComment[];
+  attachments: TicketAttachment[];
+}
 
 const priorityOptions: TicketPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 const statusOptions: TicketStatus[] = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED'];
+const categoryOptions = ['INCIDENT', 'MAINTENANCE', 'SECURITY', 'FACILITY', 'OTHER'];
 type ModalMode = 'create' | 'view' | 'edit' | 'delete' | null;
-const acceptedAttachmentTypes = '.jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.txt,.csv';
+const acceptedAttachmentTypes = 'image/*';
 
 export default function TicketsHubPage() {
   const { user } = useAuth();
-  const [tickets, setTickets] = useState<Ticket[]>(() => getTickets());
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
   const [commentDraft, setCommentDraft] = useState('');
   const [previewAttachment, setPreviewAttachment] = useState<TicketAttachment | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [actionError, setActionError] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<TicketStatus>('IN_PROGRESS');
+  const [assigneeInput, setAssigneeInput] = useState('');
   const [form, setForm] = useState({
     title: '',
     description: '',
     category: 'INCIDENT',
     priority: 'MEDIUM' as TicketPriority,
-    status: 'OPEN' as TicketStatus,
-    assignedTo: 'unassigned',
-    attachments: [] as TicketAttachment[],
   });
 
   const isAdmin = user?.role === 'ADMIN';
-  const currentUserName = user?.name ?? 'Guest';
+  const isTechnician = user?.role === 'TECHNICIAN';
 
-  const visibleTickets = useMemo(() => {
-    if (isAdmin) return tickets;
-    return tickets.filter((ticket) => ticket.createdBy === currentUserName);
-  }, [tickets, isAdmin, currentUserName]);
+  useEffect(() => {
+    loadTickets();
+  }, []);
 
-  const stats = useMemo(() => {
-    return {
-      total: visibleTickets.length,
-      open: visibleTickets.filter((ticket) => ticket.status === 'OPEN').length,
-      progress: visibleTickets.filter((ticket) => ticket.status === 'IN_PROGRESS').length,
-      resolved: visibleTickets.filter((ticket) => ticket.status === 'RESOLVED' || ticket.status === 'CLOSED').length,
-    };
-  }, [visibleTickets]);
+  const loadTickets = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchTickets();
+      setTickets(data);
+    } catch (err) {
+      console.error('Failed to load tickets', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const stats = useMemo(() => ({
+    total: tickets.length,
+    open: tickets.filter((t) => t.status === 'OPEN').length,
+    progress: tickets.filter((t) => t.status === 'IN_PROGRESS').length,
+    resolved: tickets.filter((t) => t.status === 'RESOLVED' || t.status === 'CLOSED').length,
+  }), [tickets]);
 
   const closeModal = () => {
     setModalMode(null);
     setActiveTicketId(null);
     setCommentDraft('');
+    setActionError('');
+    setPendingFiles([]);
   };
 
   const resetForm = () => {
-    setForm({
-      title: '',
-      description: '',
-      category: 'INCIDENT',
-      priority: 'MEDIUM',
-      status: 'OPEN',
-      assignedTo: 'unassigned',
-      attachments: [],
-    });
+    setForm({ title: '', description: '', category: 'INCIDENT', priority: 'MEDIUM' });
+    setPendingFiles([]);
   };
 
-  const fileToDataUrl = (file: File) =>
-    new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result ?? ''));
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
-    });
-
-  const handleAttachmentSelect = async (event: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
-    if (files.length === 0) return;
-
-    const uploadedAttachments: TicketAttachment[] = [];
-    for (const file of files) {
-      const url = await fileToDataUrl(file);
-      uploadedAttachments.push({
-        id: `att-${Math.random().toString(36).slice(2, 8)}`,
-        name: file.name,
-        type: file.type,
-        url,
-        size: file.size,
-      });
-    }
-
-    setForm((current) => ({
-      ...current,
-      attachments: [...current.attachments, ...uploadedAttachments],
-    }));
+  const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(event.target.files ?? []).slice(0, 3);
+    setPendingFiles(selected);
     event.target.value = '';
   };
 
-  const removeAttachment = (attachmentId: string) => {
-    setForm((current) => ({
-      ...current,
-      attachments: current.attachments.filter((item) => item.id !== attachmentId),
-    }));
-  };
-
-  const handleCreate = () => {
-    const next = addTicket({
-      title: form.title,
-      description: form.description,
-      category: form.category,
-      priority: form.priority,
-      status: form.status,
-      createdBy: currentUserName,
-      assignedTo: form.assignedTo.trim() || 'unassigned',
-      attachments: form.attachments,
-    });
-
-    setTickets(next);
-    resetForm();
-    closeModal();
+  const handleCreate = async () => {
+    if (!form.title.trim() || !form.description.trim()) {
+      setActionError('Title and description are required.');
+      return;
+    }
+    try {
+      setActionError('');
+      const created = await createTicketApi({
+        title: form.title,
+        description: form.description,
+        category: form.category,
+        priority: form.priority,
+      });
+      let final = created;
+      if (pendingFiles.length > 0) {
+        final = await uploadAttachments(created.id, pendingFiles);
+      }
+      setTickets((prev) => [final, ...prev]);
+      resetForm();
+      closeModal();
+    } catch (err: any) {
+      setActionError(err.response?.data?.message || 'Failed to create ticket.');
+    }
   };
 
   const handleOpenCreate = () => {
@@ -137,51 +149,104 @@ export default function TicketsHubPage() {
       description: ticket.description,
       category: ticket.category,
       priority: ticket.priority,
-      status: ticket.status,
-      assignedTo: ticket.assignedTo,
-      attachments: ticket.attachments,
     });
     setModalMode('edit');
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!activeTicketId) return;
-    const next = updateTicketDetails(activeTicketId, {
-      title: form.title,
-      description: form.description,
-      category: form.category,
-      priority: form.priority,
-      status: form.status,
-      assignedTo: form.assignedTo.trim() || 'unassigned',
-      attachments: form.attachments,
-    });
-    setTickets(next);
-    closeModal();
+    try {
+      setActionError('');
+      const updated = await updateTicketApi(activeTicketId, {
+        title: form.title,
+        description: form.description,
+        category: form.category,
+        priority: form.priority,
+      });
+      setTickets((prev) => prev.map((t) => t.id === activeTicketId ? updated : t));
+      closeModal();
+    } catch (err: any) {
+      setActionError(err.response?.data?.message || 'Failed to update ticket.');
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!activeTicketId) return;
-    const next = deleteTicket(activeTicketId);
-    setTickets(next);
-    closeModal();
+    try {
+      setActionError('');
+      await deleteTicketApi(activeTicketId);
+      setTickets((prev) => prev.filter((t) => t.id !== activeTicketId));
+      closeModal();
+    } catch (err: any) {
+      setActionError(err.response?.data?.message || 'Failed to delete ticket.');
+    }
   };
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (!activeTicketId) return;
     const value = commentDraft.trim();
     if (!value) return;
-
-    const next = addTicketComment(activeTicketId, currentUserName, value);
-    setTickets(next);
-    setCommentDraft('');
+    try {
+      const updated = await addCommentApi(activeTicketId, value);
+      setTickets((prev) => prev.map((t) => t.id === activeTicketId ? updated : t));
+      setCommentDraft('');
+    } catch (err: any) {
+      setActionError(err.response?.data?.message || 'Failed to add comment.');
+    }
   };
 
-  const canModifyTicket = (ticket: Ticket) => isAdmin || ticket.createdBy === currentUserName;
+  const handleStatusUpdate = async () => {
+    if (!activeTicketId) return;
+    try {
+      setActionError('');
+      const updated = await updateTicketStatus(activeTicketId, selectedStatus);
+      setTickets((prev) => prev.map((t) => t.id === activeTicketId ? updated : t));
+    } catch (err: any) {
+      setActionError(err.response?.data?.message || 'Failed to update status.');
+    }
+  };
+
+  const handleAssign = async () => {
+    if (!activeTicketId || !assigneeInput.trim()) return;
+    try {
+      setActionError('');
+      const updated = await assignTechnician(activeTicketId, assigneeInput.trim());
+      setTickets((prev) => prev.map((t) => t.id === activeTicketId ? updated : t));
+      setAssigneeInput('');
+    } catch (err: any) {
+      setActionError(err.response?.data?.message || 'Assignment failed.');
+    }
+  };
+
+  const handleAttachmentUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    if (!activeTicketId) return;
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) return;
+    const activeTicket = tickets.find((t) => t.id === activeTicketId);
+    if (activeTicket && activeTicket.attachments.length + files.length > 3) {
+      setActionError(`Can only upload ${3 - activeTicket.attachments.length} more file(s).`);
+      return;
+    }
+    try {
+      setActionError('');
+      const updated = await uploadAttachments(activeTicketId, files);
+      setTickets((prev) => prev.map((t) => t.id === activeTicketId ? updated : t));
+    } catch (err: any) {
+      setActionError(err.response?.data?.message || 'Upload failed.');
+    }
+    event.target.value = '';
+  };
+
+  const canModifyTicket = (ticket: Ticket) => isAdmin || ticket.createdBy === (user?.email ?? '');
+
+  const attachmentUrl = (ticketId: string, att: TicketAttachment) =>
+    `/api/tickets/${ticketId}/attachments/${att.id}`;
 
   const activeTicket = useMemo(
-    () => tickets.find((ticket) => ticket.id === activeTicketId) ?? null,
+    () => tickets.find((t) => t.id === activeTicketId) ?? null,
     [tickets, activeTicketId],
   );
+
 
   return (
     <section className="space-y-8">
@@ -199,14 +264,16 @@ export default function TicketsHubPage() {
           </div>
 
           <div className="space-y-3">
-            <button
-              type="button"
-              onClick={handleOpenCreate}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5"
-            >
-              <Plus className="h-4 w-4" />
-              New Ticket
-            </button>
+            {!isTechnician && (
+              <button
+                type="button"
+                onClick={handleOpenCreate}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5"
+              >
+                <Plus className="h-4 w-4" />
+                New Ticket
+              </button>
+            )}
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-2xl bg-slate-50 px-4 py-3">
               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Total</p>
@@ -235,8 +302,10 @@ export default function TicketsHubPage() {
             <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Ticket list</h2>
           </div>
 
+          {loading && <p className="text-sm font-medium text-slate-400">Loading tickets...</p>}
+
           <div className="space-y-3">
-            {visibleTickets.map((ticket) => (
+            {tickets.map((ticket) => (
               <article key={ticket.id} className="rounded-3xl border border-slate-200 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -257,14 +326,15 @@ export default function TicketsHubPage() {
                 {ticket.attachments.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {ticket.attachments.map((attachment) => (
-                      <button
+                      <a
                         key={attachment.id}
-                        type="button"
-                        onClick={() => setPreviewAttachment(attachment)}
+                        href={attachmentUrl(ticket.id, attachment)}
+                        target="_blank"
+                        rel="noreferrer"
                         className="rounded-full bg-indigo-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-700 hover:bg-indigo-100"
                       >
-                        {attachment.name}
-                      </button>
+                        {attachment.fileName}
+                      </a>
                     ))}
                   </div>
                 )}
@@ -306,9 +376,9 @@ export default function TicketsHubPage() {
             ))}
           </div>
 
-          {visibleTickets.length === 0 && (
+          {!loading && tickets.length === 0 && (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm font-medium text-slate-500">
-              {isAdmin ? 'No tickets yet in the system.' : 'You have not created any tickets yet.'}
+              {isAdmin ? 'No tickets yet in the system.' : 'You have not submitted any tickets yet.'}
             </div>
           )}
       </div>
@@ -352,11 +422,15 @@ export default function TicketsHubPage() {
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
                     <label className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Category</label>
-                    <input
+                    <select
                       value={form.category}
                       onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
                       className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium outline-none"
-                    />
+                    >
+                      {categoryOptions.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Priority</label>
@@ -370,60 +444,23 @@ export default function TicketsHubPage() {
                       ))}
                     </select>
                   </div>
+                </div>
+                {modalMode === 'create' && (
                   <div>
-                    <label className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Status</label>
-                    <select
-                      value={form.status}
-                      onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as TicketStatus }))}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium outline-none"
-                    >
-                      {statusOptions.map((status) => (
-                        <option key={status} value={status}>{status}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Assign to</label>
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Images (max 3)</label>
                     <input
-                      value={form.assignedTo}
-                      onChange={(event) => setForm((current) => ({ ...current, assignedTo: event.target.value }))}
-                      placeholder="technician name or email"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium outline-none"
+                      type="file"
+                      accept={acceptedAttachmentTypes}
+                      multiple
+                      onChange={handleFileSelect}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white"
                     />
+                    {pendingFiles.length > 0 && (
+                      <p className="mt-2 text-xs font-medium text-slate-500">{pendingFiles.map((f) => f.name).join(', ')}</p>
+                    )}
                   </div>
-                </div>
-                <div>
-                  <label className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Attachments</label>
-                  <input
-                    type="file"
-                    accept={acceptedAttachmentTypes}
-                    multiple
-                    onChange={handleAttachmentSelect}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white"
-                  />
-                  {form.attachments.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {form.attachments.map((attachment) => (
-                        <div key={attachment.id} className="flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1">
-                          <button
-                            type="button"
-                            onClick={() => setPreviewAttachment(attachment)}
-                            className="text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-700"
-                          >
-                            {attachment.name}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => removeAttachment(attachment.id)}
-                            className="text-[10px] font-bold text-rose-600"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                )}
+                {actionError && <p className="text-xs font-semibold text-rose-600">{actionError}</p>}
                 <div className="flex justify-end gap-2">
                   <button
                     type="button"
@@ -457,20 +494,57 @@ export default function TicketsHubPage() {
                   <span className="rounded-full bg-slate-100 px-3 py-1">by {activeTicket.createdBy}</span>
                   <span className="rounded-full bg-slate-100 px-3 py-1">assigned to {activeTicket.assignedTo}</span>
                 </div>
-                {activeTicket.attachments.length > 0 && (
-                  <div className="space-y-2 rounded-2xl border border-slate-200 p-3">
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Attachments</p>
-                    <div className="flex flex-wrap gap-2">
-                      {activeTicket.attachments.map((attachment) => (
-                        <button
-                          key={attachment.id}
-                          type="button"
-                          onClick={() => setPreviewAttachment(attachment)}
-                          className="rounded-full bg-indigo-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-700 hover:bg-indigo-100"
-                        >
-                          {attachment.name}
-                        </button>
-                      ))}
+                <div className="space-y-2 rounded-2xl border border-slate-200 p-3">
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Attachments ({activeTicket.attachments.length}/3)</p>
+                  <div className="flex flex-wrap gap-2">
+                    {activeTicket.attachments.map((attachment) => (
+                      <a
+                        key={attachment.id}
+                        href={attachmentUrl(activeTicket.id, attachment)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-full bg-indigo-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-700 hover:bg-indigo-100"
+                      >
+                        {attachment.fileName}
+                      </a>
+                    ))}
+                  </div>
+                  {activeTicket.attachments.length < 3 && (
+                    <input
+                      type="file"
+                      accept={acceptedAttachmentTypes}
+                      multiple
+                      onChange={handleAttachmentUpload}
+                      className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-2 file:py-1 file:text-xs file:font-bold file:text-white"
+                    />
+                  )}
+                </div>
+                {(isAdmin || isTechnician) && (
+                  <div className="rounded-2xl border border-slate-200 p-3">
+                    <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Update status</p>
+                    <div className="flex gap-2">
+                      <select
+                        value={selectedStatus}
+                        onChange={(e) => setSelectedStatus(e.target.value as TicketStatus)}
+                        className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium outline-none"
+                      >
+                        {statusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                      <button type="button" onClick={handleStatusUpdate} className="rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-white hover:bg-amber-600">Apply</button>
+                    </div>
+                  </div>
+                )}
+                {isAdmin && (
+                  <div className="rounded-2xl border border-slate-200 p-3">
+                    <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Assign technician</p>
+                    <div className="flex gap-2">
+                      <input
+                        value={assigneeInput}
+                        onChange={(e) => setAssigneeInput(e.target.value)}
+                        placeholder="Technician email"
+                        className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium outline-none"
+                      />
+                      <button type="button" onClick={handleAssign} className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700">Assign</button>
                     </div>
                   </div>
                 )}
@@ -498,6 +572,7 @@ export default function TicketsHubPage() {
                     Send
                   </button>
                 </div>
+                {actionError && <p className="text-xs font-semibold text-rose-600">{actionError}</p>}
               </div>
             )}
 
@@ -528,40 +603,7 @@ export default function TicketsHubPage() {
         </div>
       )}
 
-      {previewAttachment && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/70 p-4">
-          <div className="w-full max-w-4xl rounded-3xl border border-slate-200 bg-white p-4 shadow-xl">
-            <div className="mb-3 flex items-center justify-between">
-              <h4 className="text-sm font-bold text-slate-900">{previewAttachment.name}</h4>
-              <button
-                type="button"
-                onClick={() => setPreviewAttachment(null)}
-                className="rounded-full p-2 text-slate-500 hover:bg-slate-100"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="max-h-[70vh] overflow-auto rounded-2xl border border-slate-200 bg-slate-50 p-3">
-              {previewAttachment.type.startsWith('image/') ? (
-                <img src={previewAttachment.url} alt={previewAttachment.name} className="mx-auto max-h-[64vh] w-auto rounded-lg" />
-              ) : previewAttachment.type === 'application/pdf' ? (
-                <iframe src={previewAttachment.url} title={previewAttachment.name} className="h-[64vh] w-full rounded-lg bg-white" />
-              ) : (
-                <div className="space-y-3 p-4 text-sm text-slate-600">
-                  <p>Preview is not available for this file type.</p>
-                  <a
-                    href={previewAttachment.url}
-                    download={previewAttachment.name}
-                    className="inline-flex rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white"
-                  >
-                    Download file
-                  </a>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+
     </section>
   );
 }

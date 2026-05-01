@@ -17,6 +17,7 @@ export interface Facility {
   capacity: number;
   status: FacilityStatus;
   description: string;
+  image?: string;
 }
 
 export type BookingStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
@@ -191,6 +192,18 @@ export function addFacility(facility: Omit<Facility, 'id'>) {
 
 export function updateFacilities(nextFacilities: Facility[]) {
   return saveJson(FACILITY_KEY, nextFacilities);
+}
+
+export function updateFacility(id: string, updates: Partial<Omit<Facility, 'id'>>) {
+  const next = getFacilities().map((f) =>
+    f.id === id ? { ...f, ...updates } : f
+  );
+  return saveJson(FACILITY_KEY, next);
+}
+
+export function deleteFacility(id: string) {
+  const next = getFacilities().filter((f) => f.id !== id);
+  return saveJson(FACILITY_KEY, next);
 }
 
 export function getBookings() {

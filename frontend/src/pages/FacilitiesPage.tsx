@@ -1,4 +1,4 @@
-import { useMemo, useState, FormEvent, ChangeEvent } from 'react';
+import { useMemo, useState, useEffect, useRef, FormEvent, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
@@ -22,15 +22,28 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  addFacility,
-  deleteFacility,
   getBookings,
-  getFacilities,
   getTickets,
-  updateFacilities,
-  updateFacility,
-  type Facility,
 } from '@/lib/mergedStore';
+import {
+  fetchAllFacilities,
+  fetchActiveFacilities,
+  createFacility as createFacilityApi,
+  updateFacility as updateFacilityApi,
+  deleteFacility as deleteFacilityApi,
+} from '../api/facilityApi';
+
+// Local Facility type matching backend response
+export type Facility = {
+  id: string;
+  name: string;
+  type: 'LAB' | 'LECTURE_HALL' | 'SEMINAR_ROOM' | 'SPORTS_FACILITY' | 'STUDY_ROOM' | 'MEETING_ROOM' | 'OTHER';
+  location: string;
+  capacity: number;
+  status: 'ACTIVE' | 'OUT_OF_SERVICE';
+  description: string;
+  image?: string;
+};
 import { GradientDots } from '@/components/ui/gradient-dots';
 
 const typeOptions: Facility['type'][] = ['LAB', 'LECTURE_HALL', 'SEMINAR_ROOM', 'SPORTS_FACILITY', 'STUDY_ROOM', 'MEETING_ROOM', 'OTHER'];
@@ -67,7 +80,8 @@ function prettyType(type: Facility['type']) {
 export default function FacilitiesPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [facilities, setFacilities] = useState<Facility[]>(() => getFacilities());
+  const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [loadingFacilities, setLoadingFacilities] = useState(true);
   const [query, setQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | Facility['type']>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | Facility['status']>('ALL');
@@ -82,15 +96,33 @@ export default function FacilitiesPage() {
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const formPanelRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = user?.role === 'ADMIN';
   const isTechnician = user?.role === 'TECHNICIAN';
   const isRegularUser = user?.role === 'USER';
   const canManage = isAdmin || isTechnician;
 
+  // Load facilities from backend
+  useEffect(() => {
+    const load = async () => {
+      setLoadingFacilities(true);
+      try {
+        const data = isRegularUser ? await fetchActiveFacilities() : await fetchAllFacilities();
+        setFacilities(data);
+      } catch (err) {
+        console.error('Failed to load facilities', err);
+      } finally {
+        setLoadingFacilities(false);
+      }
+    };
+    load();
+  }, [isRegularUser]);
+
   const bookings = useMemo(() => getBookings(), [facilities]);
   const tickets = useMemo(() => getTickets(), [facilities]);
-  const displayFacilities = isRegularUser ? facilities.filter((facility) => facility.status === 'ACTIVE') : facilities;
+  // Backend already filters by status for USER role; show all for others
+  const displayFacilities = facilities;
 
   const filtered = useMemo(() => {
     return displayFacilities.filter((facility) => {
@@ -149,26 +181,23 @@ export default function FacilitiesPage() {
     };
   }, [facilities, bookings, tickets]);
 
-  const handleCreate = (event: FormEvent) => {
-    event.preventDefault();
-    if (editingId) {
-      const updated = updateFacility(editingId, form);
-      setFacilities(updated);
-      setEditingId(null);
-    } else {
-      const nextFacilities = addFacility(form);
-      setFacilities(nextFacilities);
-    }
+  const blankForm = { name: '', type: 'LAB' as Facility['type'], location: '', capacity: 20, status: 'ACTIVE' as Facility['status'], description: '', image: '' };
 
-    setForm({
-      name: '',
-      type: 'LAB',
-      location: '',
-      capacity: 20,
-      status: 'ACTIVE',
-      description: '',
-      image: '',
-    });
+  const handleCreate = async (event: FormEvent) => {
+    event.preventDefault();
+    try {
+      if (editingId) {
+        const updated = await updateFacilityApi(editingId, form);
+        setFacilities((prev) => prev.map((f) => f.id === editingId ? updated : f));
+        setEditingId(null);
+      } else {
+        const created = await createFacilityApi({ ...form, createdBy: user?.email ?? '' });
+        setFacilities((prev) => [...prev, created]);
+      }
+      setForm(blankForm);
+    } catch (err) {
+      console.error('Failed to save facility', err);
+    }
   };
 
   const handleEditFacility = (facility: Facility) => {
@@ -182,26 +211,22 @@ export default function FacilitiesPage() {
       image: facility.image || '',
     });
     setEditingId(facility.id);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    formPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const handleDeleteFacility = (id: string) => {
-    const updated = deleteFacility(id);
-    setFacilities(updated);
+  const handleDeleteFacility = async (id: string) => {
+    try {
+      await deleteFacilityApi(id);
+      setFacilities((prev) => prev.filter((f) => f.id !== id));
+    } catch (err) {
+      console.error('Failed to delete facility', err);
+    }
     setShowDeleteConfirm(null);
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setForm({
-      name: '',
-      type: 'LAB',
-      location: '',
-      capacity: 20,
-      status: 'ACTIVE',
-      description: '',
-      image: '',
-    });
+    setForm(blankForm);
   };
 
   const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
@@ -220,51 +245,53 @@ export default function FacilitiesPage() {
     setForm((current) => ({ ...current, image: '' }));
   };
 
-  const toggleFacilityStatus = (facilityId: string) => {
-    const next = facilities.map((item) =>
-      item.id === facilityId
-        ? { ...item, status: item.status === 'ACTIVE' ? 'OUT_OF_SERVICE' : 'ACTIVE' }
-        : item,
-    );
-    updateFacilities(next);
-    setFacilities(next);
+  const toggleFacilityStatus = async (facilityId: string) => {
+    const facility = facilities.find((f) => f.id === facilityId);
+    if (!facility) return;
+    const newStatus = facility.status === 'ACTIVE' ? 'OUT_OF_SERVICE' : 'ACTIVE';
+    try {
+      const updated = await updateFacilityApi(facilityId, { status: newStatus });
+      setFacilities((prev) => prev.map((f) => f.id === facilityId ? updated : f));
+    } catch (err) {
+      console.error('Failed to toggle facility status', err);
+    }
   };
 
   return (
-    <section className="space-y-8">
+    <div className="w-full min-w-0 space-y-6">
       {isRegularUser ? (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45 }}
-          className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm"
+          className="w-full rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-emerald-50/50 p-6 shadow-sm sm:p-8"
         >
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-700">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0 flex-1">
+              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-700">
                 <Building2 className="h-3.5 w-3.5" />
                 Available resources
               </div>
               <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
                 Find a space and book it fast.
               </h1>
-              <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-600">
-                Browse active campus facilities first, compare capacity and location quickly, and move straight into the booking flow.
+              <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-500">
+                Browse active campus facilities, compare capacity and location, then move straight into the booking flow.
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl bg-slate-50 px-4 py-3">
+            <div className="flex shrink-0 flex-row gap-3">
+              <div className="rounded-2xl border border-slate-100 bg-white px-5 py-4 shadow-sm">
                 <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Available</p>
-                <p className="mt-1 text-2xl font-black text-slate-950">{analytics.active}</p>
+                <p className="mt-1.5 text-3xl font-black text-slate-950">{analytics.active}</p>
               </div>
-              <div className="rounded-2xl bg-emerald-50 px-4 py-3">
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-700">Peak time</p>
-                <p className="mt-1 text-2xl font-black text-emerald-950">{analytics.peakWindow?.[0] ?? 'Open'}</p>
+                <p className="mt-1.5 text-3xl font-black text-emerald-950">{analytics.peakWindow?.[0] ?? 'Open'}</p>
               </div>
-              <div className="rounded-2xl bg-sky-50 px-4 py-3">
+              <div className="rounded-2xl border border-sky-100 bg-sky-50 px-5 py-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-sky-700">Avg seats</p>
-                <p className="mt-1 text-2xl font-black text-sky-950">{analytics.avgCapacity}</p>
+                <p className="mt-1.5 text-3xl font-black text-sky-950">{analytics.avgCapacity}</p>
               </div>
             </div>
           </div>
@@ -274,7 +301,7 @@ export default function FacilitiesPage() {
           initial="hidden"
           animate="visible"
           variants={stagger}
-          className="relative overflow-hidden rounded-[2.25rem] border border-slate-200 bg-[linear-gradient(135deg,#f3f8ec_0%,#fffdf7_33%,#eef6ff_100%)] shadow-[0_30px_80px_-30px_rgba(15,23,42,0.28)]"
+          className="relative w-full overflow-hidden rounded-[2.25rem] border border-slate-200 bg-[linear-gradient(135deg,#f3f8ec_0%,#fffdf7_33%,#eef6ff_100%)] shadow-[0_30px_80px_-30px_rgba(15,23,42,0.28)]"
         >
           <div className="absolute inset-0">
             <GradientDots
@@ -322,6 +349,16 @@ export default function FacilitiesPage() {
               <motion.div variants={fadeUp} transition={{ duration: 0.6 }} className="flex flex-wrap gap-3">
                 <button
                   type="button"
+                  onClick={() => {
+                    formPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add new facility
+                </button>
+                <button
+                  type="button"
                   onClick={() => navigate('/dashboard/bookings')}
                   className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
                 >
@@ -341,12 +378,12 @@ export default function FacilitiesPage() {
               >
                 <div className="rounded-2xl bg-slate-950 px-4 py-4 text-white">
                   <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Fastest signal</p>
-                  <p className="mt-2 text-lg font-black">{analytics.busiest?.facility.name ?? 'No demand yet'}</p>
+                  <p className="mt-2 truncate text-lg font-black">{analytics.busiest?.facility.name ?? 'No demand yet'}</p>
                   <p className="mt-1 text-xs font-semibold text-slate-400">Most requested resource</p>
                 </div>
                 <div className="rounded-2xl bg-white/80 px-4 py-4">
                   <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Support watch</p>
-                  <p className="mt-2 text-lg font-black text-slate-950">{analytics.riskiest?.facility.name ?? 'Stable'}</p>
+                  <p className="mt-2 truncate text-lg font-black text-slate-950">{analytics.riskiest?.facility.name ?? 'Stable'}</p>
                   <p className="mt-1 text-xs font-semibold text-slate-500">Highest current maintenance pressure</p>
                 </div>
                 <div className="rounded-2xl bg-emerald-50/90 px-4 py-4">
@@ -416,233 +453,86 @@ export default function FacilitiesPage() {
         </motion.div>
       )}
 
-      <div className={`grid gap-6 ${canManage ? 'xl:grid-cols-[minmax(0,1.35fr)_420px]' : ''}`}>
-        <div className="space-y-6">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.15 }} className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center">
-                <div className="relative flex-1">
-                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search by facility, location, or description"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-300 focus:bg-white"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 sm:w-auto">
-                  <select
-                    value={typeFilter}
-                    onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none"
-                  >
-                    <option value="ALL">All types</option>
-                    {typeOptions.map((type) => (
-                      <option key={type} value={type}>{prettyType(type)}</option>
-                    ))}
-                  </select>
-
-                  {canManage && (
-                    <select
-                      value={statusFilter}
-                      onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}
-                      className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none"
-                    >
-                      <option value="ALL">All statuses</option>
-                      <option value="ACTIVE">Active</option>
-                      <option value="OUT_OF_SERVICE">Out of service</option>
-                    </select>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <div className="rounded-full bg-slate-100 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Showing {filtered.length}</div>
-                <div className="rounded-full bg-emerald-50 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-700">{analytics.active} active</div>
-                <div className="rounded-full bg-rose-50 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-rose-700">{analytics.inactive} offline</div>
-              </div>
+      {/* ── Filter toolbar — always full-width ─────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.15 }}
+        className="w-full rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search by name, location, or description…"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-300 focus:bg-white"
+              />
             </div>
-          </motion.div>
+            <select
+              value={typeFilter}
+              onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)}
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-emerald-300 focus:bg-white"
+            >
+              <option value="ALL">All types</option>
+              {typeOptions.map((type) => (
+                <option key={type} value={type}>{prettyType(type)}</option>
+              ))}
+            </select>
+            {canManage && (
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-emerald-300 focus:bg-white"
+              >
+                <option value="ALL">All statuses</option>
+                <option value="ACTIVE">Active</option>
+                <option value="OUT_OF_SERVICE">Out of service</option>
+              </select>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">{filtered.length} shown</span>
+            <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-700">{analytics.active} active</span>
+            <span className="rounded-full bg-rose-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-rose-700">{analytics.inactive} offline</span>
+          </div>
+        </div>
+      </motion.div>
 
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            animate="visible"
-            className={`grid gap-5 ${isRegularUser ? 'md:grid-cols-2 xl:grid-cols-3' : 'lg:grid-cols-2 2xl:grid-cols-3'}`}
-          >
-            {filtered.map((facility) => {
-              const facilityBookings = bookings.filter((booking) => booking.facilityId === facility.id).length;
-              const utilization = Math.min(100, Math.round(facilityBookings.length * 16 + Math.min(facility.capacity, 120) / 4));
-              return (
-                <motion.article
-                  key={facility.id}
-                  variants={fadeUp}
-                  transition={{ duration: 0.4 }}
-                  className={`group overflow-hidden rounded-[2rem] border bg-white transition duration-300 hover:-translate-y-1 ${
-                    isRegularUser
-                      ? 'border-slate-200 shadow-[0_18px_45px_-26px_rgba(15,23,42,0.28)] hover:shadow-[0_28px_55px_-24px_rgba(15,23,42,0.22)]'
-                      : 'border-slate-200 shadow-sm hover:shadow-xl hover:shadow-slate-200/70'
-                  }`}
-                >
-                  <div className="relative">
-                    {facility.image ? (
-                      <img src={facility.image} alt={facility.name} className="h-52 w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
-                    ) : (
-                      <div className="flex h-52 items-center justify-center bg-[linear-gradient(135deg,#e2e8f0,#f8fafc)] text-slate-400">
-                        <Building2 className="h-12 w-12" />
-                      </div>
-                    )}
+      {/* ── Main content area ───────────────────────────────────────── */}
+      <div className={`w-full min-w-0 items-start${canManage ? ' grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]' : ''}`}>
+        {/* LEFT: facility cards */}
+        <div className="w-full min-w-0">
 
-                    <div className="absolute inset-x-0 top-0 flex items-start justify-between p-4">
-                      <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] ${typeAccent[facility.type]}`}>
-                        {prettyType(facility.type)}
-                      </span>
-                      <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] ${facility.status === 'ACTIVE' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
-                        {facility.status === 'ACTIVE' ? 'Live' : 'Paused'}
-                      </span>
+          {loadingFacilities ? (
+            /* ── Loading skeleton ── */
+            <div className={`grid gap-5 grid-cols-1 sm:grid-cols-2${canManage ? ' xl:grid-cols-2' : ' xl:grid-cols-3 2xl:grid-cols-4'}`}>
+              {Array.from({ length: canManage ? 4 : 6 }).map((_, i) => (
+                <div key={i} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                  <div className="h-48 w-full animate-pulse bg-slate-100" />
+                  <div className="space-y-3 p-5">
+                    <div className="h-3.5 w-1/3 animate-pulse rounded-full bg-slate-100" />
+                    <div className="h-5 w-2/3 animate-pulse rounded-xl bg-slate-100" />
+                    <div className="h-3.5 w-full animate-pulse rounded-full bg-slate-100" />
+                    <div className="h-3.5 w-4/5 animate-pulse rounded-full bg-slate-100" />
+                    <div className="mt-4 grid grid-cols-2 gap-3">
+                      <div className="h-14 animate-pulse rounded-2xl bg-slate-100" />
+                      <div className="h-14 animate-pulse rounded-2xl bg-slate-100" />
                     </div>
-
-                    <div className={`absolute inset-x-4 bottom-4 rounded-2xl p-3 text-white backdrop-blur ${
-                      isRegularUser ? 'bg-white/18 ring-1 ring-white/25' : 'bg-slate-950/85'
-                    }`}>
-                      <div className="flex items-center justify-between gap-4">
-                        <div>
-                          <p className={`text-[10px] font-bold uppercase tracking-[0.22em] ${isRegularUser ? 'text-white/80' : 'text-slate-300'}`}>Utilization</p>
-                          <p className="mt-1 text-xl font-black">{utilization}%</p>
-                        </div>
-                        <div className="text-right">
-                          <p className={`text-[10px] font-bold uppercase tracking-[0.22em] ${isRegularUser ? 'text-white/80' : 'text-slate-300'}`}>Bookings</p>
-                          <p className="mt-1 text-xl font-black">{facilityBookings}</p>
-                        </div>
-                      </div>
-                    </div>
+                    <div className="mt-3 h-11 animate-pulse rounded-2xl bg-slate-100" />
                   </div>
-
-                  <div className={`space-y-5 p-5 ${isRegularUser ? 'bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)]' : ''}`}>
-                    <div className="space-y-3">
-                      {isRegularUser && (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">
-                            Ready to book
-                          </span>
-                        </div>
-                      )}
-                      <h3 className="text-2xl font-black tracking-tight text-slate-950">{facility.name}</h3>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">{facility.description}</p>
-                    </div>
-
-                    <div className={`grid gap-3 sm:grid-cols-2 ${isRegularUser ? 'lg:grid-cols-2' : ''}`}>
-                      <div className={`rounded-2xl p-3 ${isRegularUser ? 'border border-slate-200 bg-white shadow-sm' : 'bg-slate-50'}`}>
-                        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                          <MapPin className="h-3.5 w-3.5" />
-                          Location
-                        </p>
-                        <p className="mt-2 text-sm font-semibold text-slate-700">{facility.location}</p>
-                      </div>
-                      <div className={`rounded-2xl p-3 ${isRegularUser ? 'border border-slate-200 bg-white shadow-sm' : 'bg-slate-50'}`}>
-                        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                          <Users className="h-3.5 w-3.5" />
-                          Capacity
-                        </p>
-                        <p className="mt-2 text-sm font-semibold text-slate-700">{facility.capacity} seats</p>
-                      </div>
-                    </div>
-
-                    {!isRegularUser && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                          <span>Readiness</span>
-                          <span>{facility.status === 'ACTIVE' ? 'Available for bookings' : 'Maintenance blocked'}</span>
-                        </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                          <div
-                            className={`h-full rounded-full ${facility.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-rose-500'}`}
-                            style={{ width: `${facility.status === 'ACTIVE' ? Math.max(utilization, 30) : 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    <div className={`flex flex-wrap gap-3 ${isRegularUser ? 'items-center rounded-2xl border border-slate-200 bg-white p-3 shadow-sm' : ''}`}>
-                      <button
-                        type="button"
-                        onClick={() => navigate('/dashboard/bookings')}
-                        className={`inline-flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition ${
-                          isRegularUser
-                            ? 'bg-emerald-600 text-white hover:bg-emerald-500'
-                            : 'bg-slate-950 text-white hover:bg-slate-800'
-                        }`}
-                      >
-                        <Clock3 className="h-4 w-4" />
-                        {isRegularUser ? 'Book this facility' : 'Book resource'}
-                      </button>
-
-                      {canManage && (
-                        <button
-                          type="button"
-                          onClick={() => handleEditFacility(facility)}
-                          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                        >
-                          <Edit className="h-4 w-4" />
-                          Edit
-                        </button>
-                      )}
-                    </div>
-
-                    {canManage && (
-                      <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-                        {isAdmin && (
-                          <button
-                            type="button"
-                            onClick={() => toggleFacilityStatus(facility.id)}
-                            className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-amber-700 transition hover:bg-amber-100"
-                          >
-                            <ShieldCheck className="h-3.5 w-3.5" />
-                            Toggle status
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setShowDeleteConfirm(facility.id)}
-                          className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-rose-700 transition hover:bg-rose-100"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          Delete
-                        </button>
-                      </div>
-                    )}
-
-                    {showDeleteConfirm === facility.id && (
-                      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
-                        <p className="text-sm font-semibold text-rose-900">Delete this facility from the catalogue?</p>
-                        <p className="mt-1 text-sm text-rose-700">This removes it from the current local resource list.</p>
-                        <div className="mt-4 flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteFacility(facility.id)}
-                            className="flex-1 rounded-xl bg-rose-600 px-3 py-2.5 text-sm font-bold text-white hover:bg-rose-700"
-                          >
-                            Confirm delete
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setShowDeleteConfirm(null)}
-                            className="flex-1 rounded-xl border border-rose-200 bg-white px-3 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-50"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </motion.article>
-              );
-            })}
-          </motion.div>
-
-          {filtered.length === 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-[2rem] border border-dashed border-slate-300 bg-white p-12 text-center shadow-sm">
+                </div>
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            /* ── Empty state ── */
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="w-full rounded-3xl border border-dashed border-slate-300 bg-white p-14 text-center shadow-sm"
+            >
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-100 text-slate-400">
                 <Search className="h-7 w-7" />
               </div>
@@ -651,12 +541,194 @@ export default function FacilitiesPage() {
                 Try widening the search, switching the status filter, or picking a different facility type.
               </p>
             </motion.div>
+          ) : (
+            /* ── Facility cards grid ── */
+            <motion.div
+              variants={stagger}
+              initial="hidden"
+              animate="visible"
+              className={`grid gap-5 grid-cols-1 sm:grid-cols-2${canManage ? ' xl:grid-cols-2' : ' xl:grid-cols-3 2xl:grid-cols-4'}`}
+            >
+              {filtered.map((facility) => {
+                const facilityBookings = bookings.filter((booking) => booking.facilityId === facility.id).length;
+                const utilization = Math.min(100, Math.round(facilityBookings * 16 + Math.min(facility.capacity, 120) / 4));
+                return (
+                  <motion.article
+                    key={facility.id}
+                    variants={fadeUp}
+                    transition={{ duration: 0.4 }}
+                    className={`group flex h-full flex-col overflow-hidden rounded-3xl border bg-white transition duration-300 hover:-translate-y-1 ${isRegularUser
+                      ? 'border-slate-200 shadow-[0_18px_45px_-26px_rgba(15,23,42,0.22)] hover:shadow-[0_28px_55px_-24px_rgba(15,23,42,0.18)]'
+                      : 'border-slate-200 shadow-sm hover:shadow-xl hover:shadow-slate-200/70'
+                      }`}
+                  >
+                    <div className="relative shrink-0 overflow-hidden">
+                      {facility.image ? (
+                        <img src={facility.image} alt={facility.name} className="h-48 w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
+                      ) : (
+                        <div className="flex h-48 w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400">
+                          <Building2 className="h-10 w-10" />
+                        </div>
+                      )}
+
+                      <div className="absolute inset-x-0 top-0 flex items-start justify-between p-4">
+                        <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] ${typeAccent[facility.type]}`}>
+                          {prettyType(facility.type)}
+                        </span>
+                        <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] ${facility.status === 'ACTIVE' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
+                          {facility.status === 'ACTIVE' ? 'Live' : 'Paused'}
+                        </span>
+                      </div>
+
+                      <div className={`absolute inset-x-4 bottom-4 rounded-2xl p-3 text-white backdrop-blur ${isRegularUser ? 'bg-white/18 ring-1 ring-white/25' : 'bg-slate-950/85'
+                        }`}>
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className={`text-[10px] font-bold uppercase tracking-[0.22em] ${isRegularUser ? 'text-white/80' : 'text-slate-300'}`}>Utilization</p>
+                            <p className="mt-1 text-xl font-black">{utilization}%</p>
+                          </div>
+                          <div className="text-right">
+                            <p className={`text-[10px] font-bold uppercase tracking-[0.22em] ${isRegularUser ? 'text-white/80' : 'text-slate-300'}`}>Bookings</p>
+                            <p className="mt-1 text-xl font-black">{facilityBookings}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={`flex flex-1 flex-col gap-4 p-5 ${isRegularUser ? 'bg-gradient-to-b from-white to-slate-50/60' : ''}`}>
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        {isRegularUser && (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">
+                              Ready to book
+                            </span>
+                          </div>
+                        )}
+                        <h3 className="line-clamp-1 text-xl font-black tracking-tight text-slate-950">{facility.name}</h3>
+                        <p className="line-clamp-2 text-sm leading-6 text-slate-500">{facility.description}</p>
+                      </div>
+
+                      <div className={`grid gap-3 grid-cols-2`}>
+                        <div className={`rounded-2xl p-3 ${isRegularUser ? 'border border-slate-100 bg-white shadow-sm' : 'bg-slate-50'}`}>
+                          <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                            <MapPin className="h-3 w-3" />
+                            Location
+                          </p>
+                          <p className="mt-1.5 line-clamp-1 text-xs font-semibold text-slate-700">{facility.location}</p>
+                        </div>
+                        <div className={`rounded-2xl p-3 ${isRegularUser ? 'border border-slate-100 bg-white shadow-sm' : 'bg-slate-50'}`}>
+                          <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                            <Users className="h-3 w-3" />
+                            Capacity
+                          </p>
+                          <p className="mt-1.5 text-xs font-semibold text-slate-700">{facility.capacity} seats</p>
+                        </div>
+                      </div>
+
+                      {!isRegularUser && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                            <span>Readiness</span>
+                            <span>{facility.status === 'ACTIVE' ? 'Available for bookings' : 'Maintenance blocked'}</span>
+                          </div>
+                          <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                            <div
+                              className={`h-full rounded-full ${facility.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                              style={{ width: `${facility.status === 'ACTIVE' ? Math.max(utilization, 30) : 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className={`flex flex-wrap gap-3 mt-auto ${isRegularUser ? 'items-center rounded-2xl border border-slate-100 bg-white p-3 shadow-sm' : ''}`}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const params = new URLSearchParams({
+                              facilityId: facility.id,
+                              facilityName: facility.name,
+                              resourceType: facility.type,
+                              location: facility.location,
+                            });
+                            navigate(`/bookings/new?${params.toString()}`);
+                          }}
+                          className={`inline-flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition ${isRegularUser
+                            ? 'bg-emerald-600 text-white hover:bg-emerald-500'
+                            : 'bg-slate-950 text-white hover:bg-slate-800'
+                            }`}
+                        >
+                          <Clock3 className="h-4 w-4" />
+                          {isRegularUser ? 'Book this facility' : 'Book resource'}
+                        </button>
+
+                        {canManage && (
+                          <button
+                            type="button"
+                            onClick={() => handleEditFacility(facility)}
+                            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                          >
+                            <Edit className="h-4 w-4" />
+                            Edit
+                          </button>
+                        )}
+                      </div>
+
+                      {canManage && (
+                        <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => toggleFacilityStatus(facility.id)}
+                              className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-amber-700 transition hover:bg-amber-100"
+                            >
+                              <ShieldCheck className="h-3.5 w-3.5" />
+                              Toggle status
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setShowDeleteConfirm(facility.id)}
+                            className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-rose-700 transition hover:bg-rose-100"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Delete
+                          </button>
+                        </div>
+                      )}
+
+                      {showDeleteConfirm === facility.id && (
+                        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                          <p className="text-sm font-semibold text-rose-900">Delete this facility from the catalogue?</p>
+                          <p className="mt-1 text-sm text-rose-700">This removes it from the current local resource list.</p>
+                          <div className="mt-4 flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteFacility(facility.id)}
+                              className="flex-1 rounded-xl bg-rose-600 px-3 py-2.5 text-sm font-bold text-white hover:bg-rose-700"
+                            >
+                              Confirm delete
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setShowDeleteConfirm(null)}
+                              className="flex-1 rounded-xl border border-rose-200 bg-white px-3 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-50"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </motion.article>
+                );
+              })}
+            </motion.div>
           )}
         </div>
 
         {canManage && (
-          <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.45, delay: 0.2 }} className="space-y-6">
-            <div className="rounded-[2rem] border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
+          <motion.div ref={formPanelRef} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.45, delay: 0.2 }} className="space-y-6 xl:sticky xl:top-6">
+            <div className="rounded-3xl border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Facilities Intelligence</p>
@@ -718,7 +790,7 @@ export default function FacilitiesPage() {
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
@@ -851,6 +923,6 @@ export default function FacilitiesPage() {
           </motion.div>
         )}
       </div>
-    </section>
+    </div>
   );
 }

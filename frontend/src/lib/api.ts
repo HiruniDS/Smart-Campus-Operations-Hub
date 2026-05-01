@@ -27,14 +27,17 @@ api.interceptors.response.use(
   (error) => {
     if (error.response) {
       const { status } = error.response;
-      
-      if (status === 401) {
-        // Redirct to login on 401 Unauthorized
+      const url = error.config?.url || '';
+
+      // Don't redirect on 401 from auth endpoints — the page handles that error itself
+      const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/signup') || url.includes('/auth/google');
+
+      if (status === 401 && !isAuthEndpoint) {
         localStorage.removeItem('token');
         localStorage.removeItem('role');
+        localStorage.removeItem('user');
         window.location.href = '/login';
       } else if (status === 403) {
-        // Redirect to unauthorized page on 403 Forbidden
         window.location.href = '/unauthorized';
       }
     }
