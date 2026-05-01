@@ -72,7 +72,7 @@ public class TicketServiceImpl implements TicketService {
         ticket.setCreatedBy(username);
         ticket.setCreatedAt(LocalDateTime.now());
         TicketResponse response = toResponse(ticketRepository.save(ticket));
-        notificationService.notifyAllAdmins(
+        safeNotifyAdmins(
                 "New Ticket Submitted",
                 "A new ticket \"" + ticket.getTitle() + "\" has been submitted by " + username + ".",
                 "INFO");
@@ -145,7 +145,7 @@ public class TicketServiceImpl implements TicketService {
             ticket.setStatus(TicketStatus.IN_PROGRESS);
         }
         TicketResponse response = toResponse(ticketRepository.save(ticket));
-        notificationService.createNotificationByEmail(
+        safeNotifyByEmail(
                 request.getTechnicianUsername(),
                 "New Ticket Assigned",
                 "You have been assigned ticket #" + ticketId + ": \"" + ticket.getTitle() + "\".",
@@ -171,17 +171,17 @@ public class TicketServiceImpl implements TicketService {
         TicketResponse response = toResponse(ticketRepository.save(ticket));
 
         if (nextStatus == TicketStatus.RESOLVED) {
-            notificationService.createNotificationByEmail(
+            safeNotifyByEmail(
                     ticket.getCreatedBy(),
                     "Ticket Resolved",
                     "Your ticket \"" + ticket.getTitle() + "\" has been resolved.",
                     "SUCCESS");
-            notificationService.notifyAllAdmins(
+            safeNotifyAdmins(
                     "Ticket Resolved",
                     "Ticket \"" + ticket.getTitle() + "\" has been marked as resolved by " + username + ".",
                     "SUCCESS");
         } else if (nextStatus == TicketStatus.CLOSED) {
-            notificationService.createNotificationByEmail(
+            safeNotifyByEmail(
                     ticket.getCreatedBy(),
                     "Ticket Closed",
                     "Your ticket \"" + ticket.getTitle() + "\" has been closed.",
@@ -326,8 +326,10 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
-    public Resource downloadAttachment(String ticketId, String attachmentId) {
+    public Resource downloadAttachment(String ticketId, String attachmentId, String username, boolean isAdmin,
+            boolean isTechnician) {
         Ticket ticket = getTicket(ticketId);
+        verifyCanView(ticket, username, isAdmin, isTechnician);
         Attachment attachment = ticket.getAttachments().stream()
                 .filter(a -> a.getId().equals(attachmentId))
                 .findFirst()
@@ -341,6 +343,22 @@ public class TicketServiceImpl implements TicketService {
             return resource;
         } catch (java.net.MalformedURLException e) {
             throw new ResourceNotFoundException("Could not resolve file path");
+        }
+    }
+
+    private void safeNotifyByEmail(String email, String title, String message, String type) {
+        try {
+            notificationService.createNotificationByEmail(email, title, message, type);
+        } catch (RuntimeException ex) {
+            System.err.println("[WARN] Failed to create ticket notification: " + ex.getMessage());
+        }
+    }
+
+    private void safeNotifyAdmins(String title, String message, String type) {
+        try {
+            notificationService.notifyAllAdmins(title, message, type);
+        } catch (RuntimeException ex) {
+            System.err.println("[WARN] Failed to create admin notification: " + ex.getMessage());
         }
     }
 }

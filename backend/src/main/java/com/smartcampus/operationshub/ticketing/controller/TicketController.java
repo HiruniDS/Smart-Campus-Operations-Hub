@@ -45,7 +45,7 @@ public class TicketController {
     @PostMapping
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public ResponseEntity<TicketResponse> createTicket(@Valid @RequestBody TicketCreateRequest request,
-                                                       Authentication authentication) {
+            Authentication authentication) {
         TicketResponse created = ticketService.createTicket(request, authentication.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -80,8 +80,8 @@ public class TicketController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public ResponseEntity<TicketResponse> updateTicket(@PathVariable String id,
-                                                       @Valid @RequestBody TicketUpdateRequest request,
-                                                       Authentication authentication) {
+            @Valid @RequestBody TicketUpdateRequest request,
+            Authentication authentication) {
         boolean isAdmin = hasRole(authentication, "ROLE_ADMIN");
         return ResponseEntity.ok(ticketService.updateTicket(id, request, authentication.getName(), isAdmin));
     }
@@ -97,49 +97,57 @@ public class TicketController {
     @PostMapping("/{id}/assign")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TicketResponse> assignTechnician(@PathVariable String id,
-                                                           @Valid @RequestBody AssignTechnicianRequest request) {
+            @Valid @RequestBody AssignTechnicianRequest request) {
         return ResponseEntity.ok(ticketService.assignTechnician(id, request));
     }
 
     @PostMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('ADMIN','TECHNICIAN')")
     public ResponseEntity<TicketResponse> updateStatus(@PathVariable String id,
-                                                       @Valid @RequestBody UpdateStatusRequest request,
-                                                       Authentication authentication) {
+            @Valid @RequestBody UpdateStatusRequest request,
+            Authentication authentication) {
         boolean isAdmin = hasRole(authentication, "ROLE_ADMIN");
         boolean isTechnician = hasRole(authentication, "ROLE_TECHNICIAN");
-        return ResponseEntity.ok(ticketService.updateStatus(id, request, authentication.getName(), isAdmin, isTechnician));
+        return ResponseEntity
+                .ok(ticketService.updateStatus(id, request, authentication.getName(), isAdmin, isTechnician));
     }
 
     @PostMapping("/{id}/comments")
     @PreAuthorize("hasAnyRole('USER','ADMIN','TECHNICIAN')")
     public ResponseEntity<TicketResponse> addComment(@PathVariable String id,
-                                                     @Valid @RequestBody CommentCreateRequest request,
-                                                     Authentication authentication) {
+            @Valid @RequestBody CommentCreateRequest request,
+            Authentication authentication) {
         boolean isAdmin = hasRole(authentication, "ROLE_ADMIN");
         boolean isTechnician = hasRole(authentication, "ROLE_TECHNICIAN");
-        return ResponseEntity.ok(ticketService.addComment(id, request, authentication.getName(), isAdmin, isTechnician));
+        return ResponseEntity
+                .ok(ticketService.addComment(id, request, authentication.getName(), isAdmin, isTechnician));
     }
 
     @PostMapping("/{id}/attachments")
     @PreAuthorize("hasAnyRole('USER','ADMIN','TECHNICIAN')")
     public ResponseEntity<TicketResponse> addAttachments(@PathVariable String id,
-                                                         @RequestParam("files") List<MultipartFile> files,
-                                                         Authentication authentication) {
+            @RequestParam("files") List<MultipartFile> files,
+            Authentication authentication) {
         boolean isAdmin = hasRole(authentication, "ROLE_ADMIN");
         boolean isTechnician = hasRole(authentication, "ROLE_TECHNICIAN");
-        return ResponseEntity.ok(ticketService.addAttachments(id, files, authentication.getName(), isAdmin, isTechnician));
+        return ResponseEntity
+                .ok(ticketService.addAttachments(id, files, authentication.getName(), isAdmin, isTechnician));
     }
 
     @GetMapping("/{id}/attachments/{attachmentId}")
     @PreAuthorize("hasAnyRole('USER','ADMIN','TECHNICIAN')")
     public ResponseEntity<Resource> downloadAttachment(@PathVariable String id,
-                                                       @PathVariable String attachmentId) {
-        Resource resource = ticketService.downloadAttachment(id, attachmentId);
+            @PathVariable String attachmentId,
+            Authentication authentication) {
+        boolean isAdmin = hasRole(authentication, "ROLE_ADMIN");
+        boolean isTechnician = hasRole(authentication, "ROLE_TECHNICIAN");
+        Resource resource = ticketService.downloadAttachment(id, attachmentId, authentication.getName(), isAdmin,
+                isTechnician);
         String contentType = "application/octet-stream";
         try {
             String probed = Files.probeContentType(Paths.get(resource.getURI()));
-            if (probed != null) contentType = probed;
+            if (probed != null)
+                contentType = probed;
         } catch (IOException e) {
             // fall back to octet-stream
         }

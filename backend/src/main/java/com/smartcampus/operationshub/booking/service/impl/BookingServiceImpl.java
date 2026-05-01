@@ -50,8 +50,9 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Facility not found for resourceId: " + request.getResourceId()));
 
-        if (!"ACTIVE".equalsIgnoreCase(facility.getStatus())) {
-            throw new BadRequestException("Bookings are allowed only for ACTIVE facilities");
+        if (facility.getStatus() == null || !"ACTIVE".equalsIgnoreCase(facility.getStatus())) {
+            throw new BadRequestException(
+                    "Cannot create booking because facility status is not ACTIVE: " + facility.getStatus());
         }
 
         Integer facilityCapacity = facility.getCapacity();
@@ -190,7 +191,7 @@ public class BookingServiceImpl implements BookingService {
         booking.setUpdatedAt(LocalDateTime.now());
 
         BookingResponse response = toResponse(bookingRepository.save(booking));
-        notificationService.createNotificationByEmail(
+        safeNotifyByEmail(
                 booking.getRequestedBy(),
                 "Booking Approved",
                 "Your booking for " + booking.getResourceName() + " on " + booking.getBookingDate()
@@ -216,7 +217,7 @@ public class BookingServiceImpl implements BookingService {
         booking.setUpdatedAt(LocalDateTime.now());
 
         BookingResponse response = toResponse(bookingRepository.save(booking));
-        notificationService.createNotificationByEmail(
+        safeNotifyByEmail(
                 booking.getRequestedBy(),
                 "Booking Rejected",
                 "Your booking for " + booking.getResourceName() + " was rejected. Reason: " + request.getReason(),
@@ -247,7 +248,7 @@ public class BookingServiceImpl implements BookingService {
         booking.setUpdatedAt(LocalDateTime.now());
 
         BookingResponse response = toResponse(bookingRepository.save(booking));
-        notificationService.createNotificationByEmail(
+        safeNotifyByEmail(
                 booking.getRequestedBy(),
                 "Booking Cancelled",
                 "Your booking for " + booking.getResourceName() + " on " + booking.getBookingDate()
@@ -366,5 +367,13 @@ public class BookingServiceImpl implements BookingService {
         response.setEndTime(booking.getEndTime());
         response.setStatus(booking.getStatus());
         return response;
+    }
+
+    private void safeNotifyByEmail(String email, String title, String message, String type) {
+        try {
+            notificationService.createNotificationByEmail(email, title, message, type);
+        } catch (RuntimeException ex) {
+            System.err.println("[WARN] Failed to create booking notification: " + ex.getMessage());
+        }
     }
 }

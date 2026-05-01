@@ -32,13 +32,8 @@ public class FacilityController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
     public ResponseEntity<FacilityResponseDTO> createFacility(@Valid @RequestBody CreateFacilityDTO createDTO) {
-        try {
-            FacilityResponseDTO facility = facilityService.createFacility(createDTO);
-            return ResponseEntity.status(HttpStatus.CREATED).body(facility);
-        } catch (Exception e) {
-            System.err.println("[ERROR] Failed to create facility: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        FacilityResponseDTO facility = facilityService.createFacility(createDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(facility);
     }
 
     /**
@@ -112,14 +107,9 @@ public class FacilityController {
     public ResponseEntity<FacilityResponseDTO> updateFacility(
             @PathVariable String id,
             @Valid @RequestBody UpdateFacilityDTO updateDTO) {
-        try {
-            return facilityService.updateFacility(id, updateDTO)
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
-        } catch (Exception e) {
-            System.err.println("[ERROR] Failed to update facility: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        return facilityService.updateFacility(id, updateDTO)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**

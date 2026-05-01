@@ -34,7 +34,7 @@ public class AuthService {
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(request.getRole() != null ? request.getRole() : "USER");
+        user.setRole("USER");
         user.setAuthProvider("LOCAL");
         user.setAvatar("https://api.dicebear.com/7.x/avataaars/svg?seed=" + request.getName());
 

@@ -16,7 +16,8 @@ public interface TicketService {
 
     TicketResponse createTicket(TicketCreateRequest request, String username);
 
-    List<TicketResponse> getTickets(TicketStatus status, TicketPriority priority, String username, boolean isAdmin, boolean isTechnician);
+    List<TicketResponse> getTickets(TicketStatus status, TicketPriority priority, String username, boolean isAdmin,
+            boolean isTechnician);
 
     TicketResponse getTicketById(String ticketId, String username, boolean isAdmin, boolean isTechnician);
 
@@ -26,11 +27,15 @@ public interface TicketService {
 
     TicketResponse assignTechnician(String ticketId, AssignTechnicianRequest request);
 
-    TicketResponse updateStatus(String ticketId, UpdateStatusRequest request, String username, boolean isAdmin, boolean isTechnician);
+    TicketResponse updateStatus(String ticketId, UpdateStatusRequest request, String username, boolean isAdmin,
+            boolean isTechnician);
 
-    TicketResponse addComment(String ticketId, CommentCreateRequest request, String username, boolean isAdmin, boolean isTechnician);
+    TicketResponse addComment(String ticketId, CommentCreateRequest request, String username, boolean isAdmin,
+            boolean isTechnician);
 
-    TicketResponse addAttachments(String ticketId, List<MultipartFile> files, String username, boolean isAdmin, boolean isTechnician);
+    TicketResponse addAttachments(String ticketId, List<MultipartFile> files, String username, boolean isAdmin,
+            boolean isTechnician);
 
-    Resource downloadAttachment(String ticketId, String attachmentId);
+    Resource downloadAttachment(String ticketId, String attachmentId, String username, boolean isAdmin,
+            boolean isTechnician);
 }
