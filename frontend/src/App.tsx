@@ -77,7 +77,7 @@ export default function App() {
 
           {/* Booking Routes */}
           <Route path="/bookings" element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']}><BookingDashboardPage /></ProtectedRoute>} />
-          <Route path="/bookings/new" element={<ProtectedRoute allowedRoles={['USER']}><CreateBookingPage /></ProtectedRoute>} />
+          <Route path="/bookings/new" element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']}><CreateBookingPage /></ProtectedRoute>} />
           <Route path="/bookings/me" element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']}><MyBookingsPage /></ProtectedRoute>} />
           <Route path="/bookings/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminBookingReviewPage /></ProtectedRoute>} />
           <Route path="/bookings/availability" element={<ProtectedRoute><AvailabilityViewPage /></ProtectedRoute>} />
