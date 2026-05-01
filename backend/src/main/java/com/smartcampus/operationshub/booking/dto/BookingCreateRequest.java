@@ -13,15 +13,12 @@ public class BookingCreateRequest {
     @Size(max = 100, message = "Resource ID cannot exceed 100 characters")
     private String resourceId;
 
-    @NotBlank(message = "Resource name is required")
     @Size(max = 150, message = "Resource name cannot exceed 150 characters")
     private String resourceName;
 
-    @NotBlank(message = "Resource type is required")
     @Size(max = 100, message = "Resource type cannot exceed 100 characters")
     private String resourceType;
 
-    @NotBlank(message = "Location is required")
     @Size(max = 150, message = "Location cannot exceed 150 characters")
     private String location;
 

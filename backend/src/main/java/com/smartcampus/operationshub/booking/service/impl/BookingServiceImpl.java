@@ -9,6 +9,8 @@ import com.smartcampus.operationshub.booking.dto.BookingRejectionRequest;
 import com.smartcampus.operationshub.booking.dto.BookingResponse;
 import com.smartcampus.operationshub.booking.entity.Booking;
 import com.smartcampus.operationshub.booking.entity.BookingStatus;
+import com.cliauth.model.Facility;
+import com.cliauth.repository.FacilityRepository;
 import com.cliauth.service.NotificationService;
 import com.smartcampus.operationshub.booking.repository.BookingRepository;
 import com.smartcampus.operationshub.booking.service.BookingService;
@@ -27,10 +29,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
+    private final FacilityRepository facilityRepository;
     private final NotificationService notificationService;
 
-    public BookingServiceImpl(BookingRepository bookingRepository, NotificationService notificationService) {
+    public BookingServiceImpl(BookingRepository bookingRepository, FacilityRepository facilityRepository,
+            NotificationService notificationService) {
         this.bookingRepository = bookingRepository;
+        this.facilityRepository = facilityRepository;
         this.notificationService = notificationService;
     }
 
@@ -40,6 +45,20 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingResponse createBookingRequest(BookingCreateRequest request, String username) {
+
+        Facility facility = facilityRepository.findById(request.getResourceId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Facility not found for resourceId: " + request.getResourceId()));
+
+        if (!"ACTIVE".equalsIgnoreCase(facility.getStatus())) {
+            throw new BadRequestException("Bookings are allowed only for ACTIVE facilities");
+        }
+
+        Integer facilityCapacity = facility.getCapacity();
+        if (facilityCapacity != null && request.getExpectedAttendees() > facilityCapacity) {
+            throw new BadRequestException(
+                    "Expected attendees exceed facility capacity (capacity: " + facilityCapacity + ")");
+        }
 
         // Reject bookings for dates in the past
         if (request.getBookingDate().isBefore(LocalDate.now())) {
@@ -57,9 +76,9 @@ public class BookingServiceImpl implements BookingService {
 
         Booking booking = new Booking();
         booking.setResourceId(request.getResourceId());
-        booking.setResourceName(request.getResourceName());
-        booking.setResourceType(request.getResourceType());
-        booking.setLocation(request.getLocation());
+        booking.setResourceName(facility.getName());
+        booking.setResourceType(facility.getType());
+        booking.setLocation(facility.getLocation());
         booking.setBookingDate(request.getBookingDate());
         booking.setStartTime(request.getStartTime());
         booking.setEndTime(request.getEndTime());
