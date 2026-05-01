@@ -80,9 +80,6 @@ const STYLE = `
 function validate(form) {
   const e = {};
   if (!form.resourceId.trim()) e.resourceId = 'Resource ID is required.';
-  if (!form.resourceName.trim()) e.resourceName = 'Resource name is required.';
-  if (!form.resourceType) e.resourceType = 'Resource type is required.';
-  if (!form.location.trim()) e.location = 'Location is required.';
   if (!form.bookingDate) e.bookingDate = 'Booking date is required.';
   if (!form.startTime) e.startTime = 'Start time is required.';
   if (!form.endTime) e.endTime = 'End time is required.';
@@ -189,7 +186,14 @@ export default function BookingForm() {
     setServerError('');
     setSubmitting(true);
     try {
-      const payload = { ...form, expectedAttendees: Number(form.expectedAttendees) };
+      const payload = {
+        resourceId: form.resourceId,
+        bookingDate: form.bookingDate,
+        startTime: form.startTime,
+        endTime: form.endTime,
+        purpose: form.purpose,
+        expectedAttendees: Number(form.expectedAttendees),
+      };
       const booking = await createBooking(payload);
       setSuccess(true);
       setTimeout(() => navigate(`/bookings/${booking.id}`), 1600);
@@ -283,7 +287,7 @@ export default function BookingForm() {
                   onChange={(e) => !isFacilityPreFilled && set('resourceId', e.target.value)}
                   placeholder="e.g. HALL-A1" />
               </Field>
-              <Field label="Resource Name" required error={errors.resourceName}>
+              <Field label="Resource Name" error={errors.resourceName}>
                 <input className={ic(!!errors.resourceName)} value={form.resourceName}
                   readOnly={isFacilityPreFilled}
                   style={isFacilityPreFilled ? { background: '#F9FAFB', color: '#6B7280', cursor: 'not-allowed' } : {}}
@@ -293,7 +297,7 @@ export default function BookingForm() {
             </Grid2>
             <div style={{ height: 14 }} />
             <Grid2>
-              <Field label="Resource Type" required error={errors.resourceType}>
+              <Field label="Resource Type" error={errors.resourceType}>
                 <div style={{ position: 'relative' }}>
                   <select className={`${ic(!!errors.resourceType)} bkf-select`}
                     value={form.resourceType}
@@ -312,7 +316,7 @@ export default function BookingForm() {
                   </svg>
                 </div>
               </Field>
-              <Field label="Location" required error={errors.location}>
+              <Field label="Location" error={errors.location}>
                 <input className={ic(!!errors.location)} value={form.location}
                   readOnly={isFacilityPreFilled}
                   style={isFacilityPreFilled ? { background: '#F9FAFB', color: '#6B7280', cursor: 'not-allowed' } : {}}

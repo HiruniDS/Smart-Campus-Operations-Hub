@@ -21,10 +21,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  getBookings,
-  getTickets,
-} from '@/lib/mergedStore';
+
 import {
   fetchAllFacilities,
   fetchActiveFacilities,
@@ -119,8 +116,8 @@ export default function FacilitiesPage() {
     load();
   }, [isRegularUser]);
 
-  const bookings = useMemo(() => getBookings(), [facilities]);
-  const tickets = useMemo(() => getTickets(), [facilities]);
+  const bookings = useMemo(() => [], []);
+  const tickets = useMemo(() => [], []);
   // Backend already filters by status for USER role; show all for others
   const displayFacilities = facilities;
 

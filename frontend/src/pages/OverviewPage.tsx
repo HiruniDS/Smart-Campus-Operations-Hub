@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ import { motion } from 'motion/react';
 
 export default function OverviewPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const stats = [
     { label: 'Total Resources', value: '142', change: '+12%', icon: Building2 },
@@ -50,7 +52,7 @@ export default function OverviewPage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button className="bg-black text-white hover:bg-slate-800 font-bold h-11 px-6 shadow-sm">
+          <Button className="bg-black text-white hover:bg-slate-800 font-bold h-11 px-6 shadow-sm" onClick={() => navigate('/bookings/new')}>
             <Plus className="mr-2 h-4 w-4" /> New Booking
           </Button>
           {user?.role === 'ADMIN' && (
