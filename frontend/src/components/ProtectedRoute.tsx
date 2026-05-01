@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/types';
+import { normalizeRole } from '@/lib/utils';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -30,7 +31,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+  if (allowedRoles && user && !allowedRoles.includes(normalizeRole(user.role) as UserRole)) {
     return <Navigate to="/unauthorized" replace />;
   }
 

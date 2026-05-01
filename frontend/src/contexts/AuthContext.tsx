@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole, AuthState } from '@/types';
 import api from '@/lib/api';
+import { normalizeRole } from '@/lib/utils';
 import { toast } from 'sonner';
 
 interface AuthContextType extends AuthState {
@@ -33,7 +34,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         id: params.get('id') || '',
         email: params.get('email') || '',
         name: params.get('name') || '',
-        role: params.get('role') || 'USER',
+        role: normalizeRole(params.get('role')),
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${params.get('name')}`
       };
 
@@ -58,8 +59,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     if (token && savedUser) {
+      const parsedUser = JSON.parse(savedUser);
+      parsedUser.role = normalizeRole(parsedUser.role);
       setState({
-        user: JSON.parse(savedUser),
+        user: parsedUser,
         isAuthenticated: true,
         isLoading: false,
       });
@@ -74,6 +77,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await api.post('/auth/login', { email, password });
       const { token, user } = response.data;
 
+      user.role = normalizeRole(user.role);
       localStorage.setItem("token", token);
       localStorage.setItem("role", user.role);
       localStorage.setItem('user', JSON.stringify(user));
@@ -98,6 +102,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await api.post('/auth/signup', { name, email, password, role });
       const { token, user } = response.data;
 
+      user.role = normalizeRole(user.role);
       localStorage.setItem("token", token);
       localStorage.setItem("role", user.role);
       localStorage.setItem('user', JSON.stringify(user));
