@@ -1,27 +1,10 @@
 import { useMemo, useState, useEffect, useRef, FormEvent, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
 import {
-  AlertTriangle,
-  ArrowRight,
-  BarChart3,
-  Building2,
-  Clock3,
-  Edit,
-  MapPin,
-  Plus,
-  Search,
-  ShieldCheck,
-  Sparkles,
-  Trash2,
-  Upload,
-  Users,
-  Waves,
-  Wrench,
-  X,
+  ArrowRight, Building2, Edit, MapPin, Plus, Search,
+  ShieldCheck, Trash2, Upload, Users, Wrench, X, Clock3,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-
 import {
   fetchAllFacilities,
   fetchActiveFacilities,
@@ -30,7 +13,7 @@ import {
   deleteFacility as deleteFacilityApi,
 } from '../api/facilityApi';
 
-// Local Facility type matching backend response
+/* ─── Types ───────────────────────────────────────────────── */
 export type Facility = {
   id: string;
   name: string;
@@ -41,145 +24,185 @@ export type Facility = {
   description: string;
   image?: string;
 };
-import { GradientDots } from '@/components/ui/gradient-dots';
 
-const typeOptions: Facility['type'][] = ['LAB', 'LECTURE_HALL', 'SEMINAR_ROOM', 'SPORTS_FACILITY', 'STUDY_ROOM', 'MEETING_ROOM', 'OTHER'];
+const typeOptions: Facility['type'][] = [
+  'LAB', 'LECTURE_HALL', 'SEMINAR_ROOM',
+  'SPORTS_FACILITY', 'STUDY_ROOM', 'MEETING_ROOM', 'OTHER',
+];
 
-const typeAccent: Record<Facility['type'], string> = {
-  LAB: 'bg-cyan-100 text-cyan-800',
-  LECTURE_HALL: 'bg-blue-100 text-blue-800',
-  SEMINAR_ROOM: 'bg-orange-100 text-orange-800',
-  SPORTS_FACILITY: 'bg-amber-100 text-amber-800',
-  STUDY_ROOM: 'bg-emerald-100 text-emerald-800',
-  MEETING_ROOM: 'bg-rose-100 text-rose-800',
-  OTHER: 'bg-slate-200 text-slate-700',
+const typeAccent: Record<Facility['type'], { bg: string; text: string }> = {
+  LAB:             { bg: '#F0FDFA', text: '#0D9488' },
+  LECTURE_HALL:    { bg: '#EFF6FF', text: '#2563EB' },
+  SEMINAR_ROOM:    { bg: '#F5F3FF', text: '#7C3AED' },
+  SPORTS_FACILITY: { bg: '#F0FDF4', text: '#16A34A' },
+  STUDY_ROOM:      { bg: '#FFFBEB', text: '#D97706' },
+  MEETING_ROOM:    { bg: '#FFF1F2', text: '#E11D48' },
+  OTHER:           { bg: '#F8FAFC', text: '#64748B' },
 };
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 18 },
-  visible: { opacity: 1, y: 0 },
-};
+const prettyType = (type: Facility['type']) => type.replaceAll('_', ' ');
 
-const stagger = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.05,
-    },
-  },
-};
+/* ─── Inline styles ───────────────────────────────────────── */
+const STYLE = `
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
+  .fp-root { font-family: 'Outfit', ui-sans-serif, system-ui, sans-serif; }
+  @keyframes fpFadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fp-u0 { animation: fpFadeUp .35s ease both; }
+  .fp-u1 { animation: fpFadeUp .35s .07s ease both; }
+  .fp-u2 { animation: fpFadeUp .35s .14s ease both; }
+  .fp-u3 { animation: fpFadeUp .35s .21s ease both; }
 
-function prettyType(type: Facility['type']) {
-  return type.replaceAll('_', ' ');
-}
+  .fp-input {
+    width: 100%; box-sizing: border-box;
+    padding: 10px 14px; border-radius: 10px;
+    border: 1.5px solid #E5E7EB; background: #FAFAF8;
+    font-size: 14px; color: #111827; outline: none;
+    font-family: inherit;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .fp-input::placeholder { color: #C0BBB0; }
+  .fp-input:focus {
+    border-color: #10B981;
+    box-shadow: 0 0 0 3px rgba(16,185,129,0.12);
+    background: #fff;
+  }
+  .fp-select { appearance: none; cursor: pointer; padding-right: 36px; }
 
+  .fp-card {
+    background: #fff; border: 1px solid rgba(0,0,0,0.07);
+    border-radius: 18px; overflow: hidden;
+    transition: transform .2s ease, box-shadow .2s ease;
+    display: flex; flex-direction: column;
+  }
+  .fp-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.09);
+  }
+
+  .fp-btn-primary {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 10px 18px; border-radius: 11px; cursor: pointer; border: none;
+    font-size: 13px; font-weight: 700; color: #fff; font-family: inherit;
+    background: linear-gradient(135deg, #10B981, #059669);
+    box-shadow: 0 3px 10px rgba(16,185,129,0.28);
+    transition: filter .15s, transform .15s;
+    width: 100%;
+  }
+  .fp-btn-primary:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+  .fp-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .fp-btn-secondary {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 10px 18px; border-radius: 11px; cursor: pointer;
+    font-size: 13px; font-weight: 700; font-family: inherit;
+    background: #fff; color: #374151;
+    border: 1.5px solid #E5E7EB;
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  .fp-btn-secondary:hover {
+    background: #F0FDF4; border-color: #A7F3D0; color: #059669;
+  }
+
+  .fp-btn-danger {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 13px; border-radius: 9px; cursor: pointer;
+    font-size: 11px; font-weight: 700; font-family: inherit;
+    background: #FFF1F2; color: #E11D48;
+    border: 1.5px solid #FECDD3;
+    transition: background .15s;
+  }
+  .fp-btn-danger:hover { background: #FFE4E6; }
+
+  .fp-btn-warn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 13px; border-radius: 9px; cursor: pointer;
+    font-size: 11px; font-weight: 700; font-family: inherit;
+    background: #FFFBEB; color: #D97706;
+    border: 1.5px solid #FDE68A;
+    transition: background .15s;
+  }
+  .fp-btn-warn:hover { background: #FEF3C7; }
+
+  .fp-stat-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 99px;
+    font-size: 10px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.16em;
+  }
+
+  .fp-skeleton { background: #F0EDE6; border-radius: 8px; animation: fpPulse 1.4s ease-in-out infinite; }
+  @keyframes fpPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+`;
+
+/* ══════════════════════════════════════════════════════════
+   PAGE COMPONENT
+══════════════════════════════════════════════════════════ */
 export default function FacilitiesPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [facilities, setFacilities] = useState<Facility[]>([]);
+
+  const [facilities,        setFacilities]        = useState<Facility[]>([]);
   const [loadingFacilities, setLoadingFacilities] = useState(true);
-  const [query, setQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'ALL' | Facility['type']>('ALL');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | Facility['status']>('ALL');
-  const [form, setForm] = useState<Omit<Facility, 'id'>>({
-    name: '',
-    type: 'LAB',
-    location: '',
-    capacity: 20,
-    status: 'ACTIVE',
-    description: '',
-    image: '',
-  });
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [query,             setQuery]             = useState('');
+  const [typeFilter,        setTypeFilter]        = useState<'ALL' | Facility['type']>('ALL');
+  const [statusFilter,      setStatusFilter]      = useState<'ALL' | Facility['status']>('ALL');
+  const [editingId,         setEditingId]         = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+
+  const blankForm = {
+    name: '', type: 'LAB' as Facility['type'],
+    location: '', capacity: 20,
+    status: 'ACTIVE' as Facility['status'],
+    description: '', image: '',
+  };
+  const [form, setForm] = useState<Omit<Facility, 'id'>>(blankForm);
+
   const formPanelRef = useRef<HTMLDivElement>(null);
 
-  const isAdmin = user?.role === 'ADMIN';
-  const isTechnician = user?.role === 'TECHNICIAN';
+  const isAdmin       = user?.role === 'ADMIN';
+  const isTechnician  = user?.role === 'TECHNICIAN';
   const isRegularUser = user?.role === 'USER';
-  const canManage = isAdmin || isTechnician;
+  const canManage     = isAdmin || isTechnician;
 
-  // Load facilities from backend
+  /* ── Load facilities ── */
   useEffect(() => {
     const load = async () => {
       setLoadingFacilities(true);
       try {
         const data = isRegularUser ? await fetchActiveFacilities() : await fetchAllFacilities();
         setFacilities(data);
-      } catch (err) {
-        console.error('Failed to load facilities', err);
-      } finally {
-        setLoadingFacilities(false);
-      }
+      } catch (err) { console.error('Failed to load facilities', err); }
+      finally       { setLoadingFacilities(false); }
     };
     load();
   }, [isRegularUser]);
 
-  const bookings = useMemo(() => [], []);
-  const tickets = useMemo(() => [], []);
-  // Backend already filters by status for USER role; show all for others
-  const displayFacilities = facilities;
+  /* ── Filter ── */
+  const filtered = useMemo(() => facilities.filter((f) => {
+    const haystack = `${f.name} ${f.location} ${f.description}`.toLowerCase();
+    const matchesQuery  = haystack.includes(query.toLowerCase());
+    const matchesType   = typeFilter   === 'ALL' || f.type   === typeFilter;
+    const matchesStatus = statusFilter === 'ALL' || f.status === statusFilter;
+    return matchesQuery && matchesType && matchesStatus;
+  }), [facilities, query, typeFilter, statusFilter]);
 
-  const filtered = useMemo(() => {
-    return displayFacilities.filter((facility) => {
-      const haystack = `${facility.name} ${facility.location} ${facility.description}`.toLowerCase();
-      const matchesQuery = haystack.includes(query.toLowerCase());
-      const matchesType = typeFilter === 'ALL' || facility.type === typeFilter;
-      const matchesStatus = statusFilter === 'ALL' || facility.status === statusFilter;
-      return matchesQuery && matchesType && matchesStatus;
-    });
-  }, [displayFacilities, query, typeFilter, statusFilter]);
-
-  const analytics = useMemo(() => {
-    const facilityMetrics = facilities.map((facility) => {
-      const facilityBookings = bookings.filter((booking) => booking.facilityId === facility.id);
-      const activeTickets = tickets.filter((ticket) => {
-        const text = `${ticket.title} ${ticket.description}`.toLowerCase();
-        return text.includes(facility.name.toLowerCase()) && !['RESOLVED', 'CLOSED'].includes(ticket.status);
-      });
-
-      const utilization = Math.min(100, Math.round(facilityBookings.length * 16 + Math.min(facility.capacity, 120) / 4));
-      const riskScore = activeTickets.length * 30 + (facility.status === 'OUT_OF_SERVICE' ? 35 : 0);
-
-      return {
-        facility,
-        bookings: facilityBookings.length,
-        activeTickets: activeTickets.length,
-        utilization,
-        riskScore,
-      };
-    });
-
-    const busiest = [...facilityMetrics].sort((a, b) => b.bookings - a.bookings || b.utilization - a.utilization)[0];
-    const riskiest = [...facilityMetrics].sort((a, b) => b.riskScore - a.riskScore)[0];
-    const utilizationRows = [...facilityMetrics].sort((a, b) => b.utilization - a.utilization).slice(0, 4);
-
-    const bookingWindows = bookings.reduce<Record<string, number>>((acc, booking) => {
-      const hour = Number(booking.startTime.split(':')[0]);
-      const label = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening';
-      acc[label] = (acc[label] || 0) + 1;
-      return acc;
-    }, {});
-
-    const peakWindow = Object.entries(bookingWindows).sort((a, b) => b[1] - a[1])[0];
-    const activeCount = facilities.filter((facility) => facility.status === 'ACTIVE').length;
-
+  /* ── Stats ── */
+  const stats = useMemo(() => {
+    const active   = facilities.filter((f) => f.status === 'ACTIVE').length;
+    const inactive = facilities.length - active;
+    const avgCapacity = facilities.length
+      ? Math.round(facilities.reduce((s, f) => s + f.capacity, 0) / facilities.length)
+      : 0;
     return {
-      busiest,
-      riskiest,
-      utilizationRows,
-      peakWindow,
-      total: facilities.length,
-      active: activeCount,
-      inactive: facilities.length - activeCount,
-      coverage: facilities.length ? Math.round((activeCount / facilities.length) * 100) : 0,
-      avgCapacity: facilities.length ? Math.round(facilities.reduce((sum, facility) => sum + facility.capacity, 0) / facilities.length) : 0,
+      total: facilities.length, active, inactive, avgCapacity,
+      coverage: facilities.length ? Math.round((active / facilities.length) * 100) : 0,
     };
-  }, [facilities, bookings, tickets]);
+  }, [facilities]);
 
-  const blankForm = { name: '', type: 'LAB' as Facility['type'], location: '', capacity: 20, status: 'ACTIVE' as Facility['status'], description: '', image: '' };
-
+  /* ── Handlers ── */
   const handleCreate = async (event: FormEvent) => {
     event.preventDefault();
     try {
@@ -192,22 +215,16 @@ export default function FacilitiesPage() {
         setFacilities((prev) => [...prev, created]);
       }
       setForm(blankForm);
-    } catch (err) {
-      console.error('Failed to save facility', err);
-    }
+    } catch (err) { console.error('Failed to save facility', err); }
   };
 
-  const handleEditFacility = (facility: Facility) => {
+  const handleEditFacility = (f: Facility) => {
     setForm({
-      name: facility.name,
-      type: facility.type,
-      location: facility.location,
-      capacity: facility.capacity,
-      status: facility.status,
-      description: facility.description,
-      image: facility.image || '',
+      name: f.name, type: f.type, location: f.location,
+      capacity: f.capacity, status: f.status,
+      description: f.description, image: f.image || '',
     });
-    setEditingId(facility.id);
+    setEditingId(f.id);
     formPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
@@ -215,711 +232,490 @@ export default function FacilitiesPage() {
     try {
       await deleteFacilityApi(id);
       setFacilities((prev) => prev.filter((f) => f.id !== id));
-    } catch (err) {
-      console.error('Failed to delete facility', err);
-    }
+    } catch (err) { console.error('Failed to delete facility', err); }
     setShowDeleteConfirm(null);
   };
 
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setForm(blankForm);
-  };
+  const handleCancelEdit = () => { setEditingId(null); setForm(blankForm); };
 
   const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     const reader = new FileReader();
-    reader.onload = (loadEvent) => {
-      const imageData = loadEvent.target?.result as string;
-      setForm((current) => ({ ...current, image: imageData }));
-    };
+    reader.onload = (e) => setForm((c) => ({ ...c, image: e.target?.result as string }));
     reader.readAsDataURL(file);
   };
 
-  const clearImage = () => {
-    setForm((current) => ({ ...current, image: '' }));
+  const clearImage = () => setForm((c) => ({ ...c, image: '' }));
+
+  const toggleFacilityStatus = async (id: string) => {
+    const f = facilities.find((x) => x.id === id);
+    if (!f) return;
+    const newStatus = f.status === 'ACTIVE' ? 'OUT_OF_SERVICE' : 'ACTIVE';
+    try {
+      const updated = await updateFacilityApi(id, { status: newStatus });
+      setFacilities((prev) => prev.map((x) => x.id === id ? updated : x));
+    } catch (err) { console.error('Failed to toggle facility status', err); }
   };
 
-  const toggleFacilityStatus = async (facilityId: string) => {
-    const facility = facilities.find((f) => f.id === facilityId);
-    if (!facility) return;
-    const newStatus = facility.status === 'ACTIVE' ? 'OUT_OF_SERVICE' : 'ACTIVE';
-    try {
-      const updated = await updateFacilityApi(facilityId, { status: newStatus });
-      setFacilities((prev) => prev.map((f) => f.id === facilityId ? updated : f));
-    } catch (err) {
-      console.error('Failed to toggle facility status', err);
-    }
+  const handleBookFacility = (f: Facility) => {
+    const params = new URLSearchParams({
+      facilityId: f.id, facilityName: f.name,
+      resourceType: f.type, location: f.location,
+    });
+    navigate(`/bookings/new?${params.toString()}`);
   };
 
   return (
-    <div className="w-full min-w-0 space-y-6">
-      {isRegularUser ? (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-          className="w-full rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-emerald-50/50 p-6 shadow-sm sm:p-8"
-        >
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="min-w-0 flex-1">
-              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-700">
-                <Building2 className="h-3.5 w-3.5" />
-                Available resources
+    <div className="fp-root min-h-screen" style={{ background: '#E9E5DC' }}>
+      <style>{STYLE}</style>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-16">
+
+        {/* ── Breadcrumb ─────────────────────────────── */}
+        <nav className="fp-u0 flex items-center gap-1.5 text-xs mb-6">
+          <span style={{ color: '#9CA3AF' }} className="font-semibold uppercase tracking-widest">Operations</span>
+          <span style={{ color: '#9CA3AF' }}>›</span>
+          <span style={{ color: '#6B7280' }} className="font-medium">Facilities</span>
+        </nav>
+
+        {/* ── HERO ───────────────────────────────────── */}
+        <div className="fp-u0 relative overflow-hidden rounded-2xl mb-6"
+          style={{ background: '#0C1D11' }}>
+
+          <div className="absolute inset-0 pointer-events-none" style={{
+            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)',
+            backgroundSize: '26px 26px',
+          }} />
+          <div className="absolute inset-x-0 top-0 h-[3px]"
+            style={{ background: 'linear-gradient(90deg, #10B981 0%, #34D399 50%, #059669 100%)' }} />
+          <div className="absolute -top-24 -left-16 w-72 h-72 rounded-full pointer-events-none"
+            style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.12), transparent 70%)' }} />
+          <div className="absolute bottom-0 right-48 w-56 h-56 rounded-full pointer-events-none"
+            style={{ background: 'radial-gradient(circle, rgba(52,211,153,0.06), transparent 70%)' }} />
+
+          <div className="relative px-8 py-9 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+            <div className="max-w-xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest mb-4"
+                style={{ background: 'rgba(16,185,129,0.14)', color: '#34D399' }}>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                {isRegularUser ? 'Available Resources' : canManage ? 'Operations Console' : 'Resources'}
               </div>
-              <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-                Find a space and book it fast.
+              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight mb-2"
+                style={{ color: '#F0FDF4' }}>
+                {isRegularUser ? 'Find a space and book it fast.' : 'Campus facilities catalogue.'}
               </h1>
-              <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-500">
-                Browse active campus facilities, compare capacity and location, then move straight into the booking flow.
+              <p className="text-sm" style={{ color: '#9CA3AF', lineHeight: 1.7 }}>
+                {isRegularUser
+                  ? 'Browse active campus facilities, compare capacity and location, then move straight into the booking flow.'
+                  : 'Manage your campus resource catalogue — add new spaces, update details, and keep availability current.'}
               </p>
+
+              {canManage && (
+                <div className="flex flex-wrap gap-3 mt-6">
+                  <button type="button" onClick={() => formPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.98]"
+                    style={{ background: 'linear-gradient(135deg, #10B981, #059669)', boxShadow: '0 4px 16px rgba(16,185,129,0.35)' }}>
+                    <Plus className="h-4 w-4" /> Add Facility
+                  </button>
+                  <button type="button" onClick={() => navigate('/bookings')}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all hover:-translate-y-0.5 active:scale-[0.98]"
+                    style={{ background: 'rgba(255,255,255,0.07)', color: '#E5E7EB', border: '1px solid rgba(255,255,255,0.12)' }}>
+                    Booking Flow <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
             </div>
 
-            <div className="flex shrink-0 flex-row gap-3">
-              <div className="rounded-2xl border border-slate-100 bg-white px-5 py-4 shadow-sm">
-                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Available</p>
-                <p className="mt-1.5 text-3xl font-black text-slate-950">{analytics.active}</p>
-              </div>
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-700">Peak time</p>
-                <p className="mt-1.5 text-3xl font-black text-emerald-950">{analytics.peakWindow?.[0] ?? 'Open'}</p>
-              </div>
-              <div className="rounded-2xl border border-sky-100 bg-sky-50 px-5 py-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-sky-700">Avg seats</p>
-                <p className="mt-1.5 text-3xl font-black text-sky-950">{analytics.avgCapacity}</p>
-              </div>
+            <div className="grid grid-cols-3 gap-3 shrink-0">
+              <StatBox label="Available" value={stats.active}        accent="#34D399" />
+              <StatBox label="Coverage"  value={`${stats.coverage}%`} accent="#34D399" />
+              <StatBox label="Avg Seats" value={stats.avgCapacity}    accent="#34D399" />
             </div>
-          </div>
-        </motion.div>
-      ) : (
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={stagger}
-          className="relative w-full overflow-hidden rounded-[2.25rem] border border-slate-200 bg-[linear-gradient(135deg,#f3f8ec_0%,#fffdf7_33%,#eef6ff_100%)] shadow-[0_30px_80px_-30px_rgba(15,23,42,0.28)]"
-        >
-          <div className="absolute inset-0">
-            <GradientDots
-              duration={20}
-              colorCycleDuration={10}
-              dotSize={8}
-              spacing={22}
-              backgroundColor="rgba(255,255,255,0.24)"
-              className="pointer-events-none opacity-60 mix-blend-soft-light [mask-image:radial-gradient(circle_at_center,black,transparent_78%)]"
-            />
-            <motion.div
-              animate={{ x: [0, 16, 0], y: [0, -10, 0] }}
-              transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute left-[-4rem] top-[-3rem] h-48 w-48 rounded-full bg-emerald-200/45 blur-3xl"
-            />
-            <motion.div
-              animate={{ x: [0, -18, 0], y: [0, 16, 0] }}
-              transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute right-[-2rem] top-[2rem] h-56 w-56 rounded-full bg-sky-200/40 blur-3xl"
-            />
-            <motion.div
-              animate={{ x: [0, 20, 0] }}
-              transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute bottom-[-4rem] left-[30%] h-56 w-56 rounded-full bg-amber-100/60 blur-3xl"
-            />
-            <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.72),rgba(255,255,255,0.18))]" />
-          </div>
-
-          <div className="relative grid gap-8 p-6 sm:p-8 xl:grid-cols-[1.15fr_0.85fr] xl:p-10">
-            <div className="space-y-6">
-              <motion.div variants={fadeUp} transition={{ duration: 0.5 }} className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.24em] text-emerald-700 backdrop-blur">
-                <Sparkles className="h-3.5 w-3.5" />
-                Resource Experience Layer
-              </motion.div>
-
-              <motion.div variants={fadeUp} transition={{ duration: 0.55 }} className="space-y-4">
-                <h1 className="max-w-4xl text-4xl font-black tracking-tight text-slate-950 sm:text-5xl xl:text-6xl">
-                  A premium facilities cockpit for smarter campus operations.
-                </h1>
-                <p className="max-w-2xl text-sm font-medium leading-7 text-slate-600 sm:text-base">
-                  Manage facilities through a polished control surface that blends analytics, demand signals, and resource actions into one high-clarity workspace.
-                </p>
-              </motion.div>
-
-              <motion.div variants={fadeUp} transition={{ duration: 0.6 }} className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    formPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-700"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add new facility
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/dashboard/bookings')}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
-                >
-                  Open booking flow
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-                <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/75 px-4 py-3 text-sm font-semibold text-slate-700 backdrop-blur">
-                  <Waves className="h-4 w-4 text-emerald-600" />
-                  Live coverage: {analytics.coverage}%
-                </div>
-              </motion.div>
-
-              <motion.div
-                variants={fadeUp}
-                transition={{ duration: 0.65 }}
-                className="grid gap-3 rounded-[1.8rem] border border-white/70 bg-white/55 p-4 shadow-sm backdrop-blur sm:grid-cols-3"
-              >
-                <div className="rounded-2xl bg-slate-950 px-4 py-4 text-white">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Fastest signal</p>
-                  <p className="mt-2 truncate text-lg font-black">{analytics.busiest?.facility.name ?? 'No demand yet'}</p>
-                  <p className="mt-1 text-xs font-semibold text-slate-400">Most requested resource</p>
-                </div>
-                <div className="rounded-2xl bg-white/80 px-4 py-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Support watch</p>
-                  <p className="mt-2 truncate text-lg font-black text-slate-950">{analytics.riskiest?.facility.name ?? 'Stable'}</p>
-                  <p className="mt-1 text-xs font-semibold text-slate-500">Highest current maintenance pressure</p>
-                </div>
-                <div className="rounded-2xl bg-emerald-50/90 px-4 py-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-700">Booking pulse</p>
-                  <p className="mt-2 text-lg font-black text-emerald-950">{analytics.peakWindow?.[0] ?? 'Open window'}</p>
-                  <p className="mt-1 text-xs font-semibold text-emerald-800/70">Busiest reservation start period</p>
-                </div>
-              </motion.div>
-
-              <motion.div variants={stagger} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {[
-                  { label: 'Portfolio', value: analytics.total, tone: 'bg-white/88 border-white/80 text-slate-950', meta: 'Resources indexed' },
-                  { label: 'Coverage', value: `${analytics.coverage}%`, tone: 'bg-emerald-50/90 border-emerald-100 text-emerald-900', meta: 'Ready for use' },
-                  { label: 'Peak Window', value: analytics.peakWindow?.[0] ?? 'Open', tone: 'bg-slate-950 border-slate-900 text-white', meta: analytics.peakWindow ? `${analytics.peakWindow[1]} starts` : 'No trend yet' },
-                  { label: 'Avg Capacity', value: analytics.avgCapacity, tone: 'bg-amber-50/90 border-amber-100 text-amber-950', meta: 'Seats per space' },
-                ].map((item) => (
-                  <motion.div
-                    key={item.label}
-                    variants={fadeUp}
-                    transition={{ duration: 0.45 }}
-                    className={`rounded-3xl border p-4 shadow-sm ${item.tone}`}
-                  >
-                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] opacity-70">{item.label}</p>
-                    <p className="mt-2 text-3xl font-black">{item.value}</p>
-                    <p className="mt-1 text-xs font-semibold opacity-75">{item.meta}</p>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </div>
-
-            <motion.div variants={stagger} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-              <motion.div variants={fadeUp} transition={{ duration: 0.55 }} className="rounded-[1.9rem] border border-white/70 bg-white/85 p-5 shadow-lg shadow-slate-200/50 backdrop-blur">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-2xl bg-blue-100 p-3 text-blue-700">
-                    <BarChart3 className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Demand Leader</p>
-                    <h2 className="mt-1 text-lg font-black tracking-tight text-slate-950">{analytics.busiest?.facility.name ?? 'No demand yet'}</h2>
-                  </div>
-                </div>
-                <p className="mt-4 text-sm font-medium leading-6 text-slate-600">
-                  {analytics.busiest
-                    ? `${analytics.busiest.bookings} bookings keep this facility at the front of current demand.`
-                    : 'Booking behavior will appear here once requests start building up.'}
-                </p>
-              </motion.div>
-
-              <motion.div variants={fadeUp} transition={{ duration: 0.6 }} className="rounded-[1.9rem] border border-white/70 bg-slate-950 p-5 text-white shadow-lg shadow-slate-300/40">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-2xl bg-white/10 p-3 text-amber-300">
-                    <AlertTriangle className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Maintenance Watch</p>
-                    <h2 className="mt-1 text-lg font-black tracking-tight">{analytics.riskiest?.facility.name ?? 'No active risk'}</h2>
-                  </div>
-                </div>
-                <p className="mt-4 text-sm font-medium leading-6 text-slate-300">
-                  {analytics.riskiest
-                    ? `${analytics.riskiest.activeTickets} active issue${analytics.riskiest.activeTickets === 1 ? '' : 's'} currently push this resource into the highest risk band.`
-                    : 'No active support signals are being pulled from unresolved facility tickets.'}
-                </p>
-              </motion.div>
-            </motion.div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* ── Filter toolbar — always full-width ─────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.15 }}
-        className="w-full rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by name, location, or description…"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-300 focus:bg-white"
-              />
-            </div>
-            <select
-              value={typeFilter}
-              onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-emerald-300 focus:bg-white"
-            >
-              <option value="ALL">All types</option>
-              {typeOptions.map((type) => (
-                <option key={type} value={type}>{prettyType(type)}</option>
-              ))}
-            </select>
-            {canManage && (
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-emerald-300 focus:bg-white"
-              >
-                <option value="ALL">All statuses</option>
-                <option value="ACTIVE">Active</option>
-                <option value="OUT_OF_SERVICE">Out of service</option>
-              </select>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">{filtered.length} shown</span>
-            <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-700">{analytics.active} active</span>
-            <span className="rounded-full bg-rose-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-rose-700">{analytics.inactive} offline</span>
           </div>
         </div>
-      </motion.div>
 
-      {/* ── Main content area ───────────────────────────────────────── */}
-      <div className={`w-full min-w-0 items-start${canManage ? ' grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]' : ''}`}>
-        {/* LEFT: facility cards */}
-        <div className="w-full min-w-0">
+        {/* ── Filter bar ─────────────────────────────── */}
+        <div className="fp-u1 rounded-2xl bg-white p-5 mb-5"
+          style={{ border: '1px solid rgba(0,0,0,0.07)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
 
-          {loadingFacilities ? (
-            /* ── Loading skeleton ── */
-            <div className={`grid gap-5 grid-cols-1 sm:grid-cols-2${canManage ? ' xl:grid-cols-2' : ' xl:grid-cols-3 2xl:grid-cols-4'}`}>
-              {Array.from({ length: canManage ? 4 : 6 }).map((_, i) => (
-                <div key={i} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                  <div className="h-48 w-full animate-pulse bg-slate-100" />
-                  <div className="space-y-3 p-5">
-                    <div className="h-3.5 w-1/3 animate-pulse rounded-full bg-slate-100" />
-                    <div className="h-5 w-2/3 animate-pulse rounded-xl bg-slate-100" />
-                    <div className="h-3.5 w-full animate-pulse rounded-full bg-slate-100" />
-                    <div className="h-3.5 w-4/5 animate-pulse rounded-full bg-slate-100" />
-                    <div className="mt-4 grid grid-cols-2 gap-3">
-                      <div className="h-14 animate-pulse rounded-2xl bg-slate-100" />
-                      <div className="h-14 animate-pulse rounded-2xl bg-slate-100" />
-                    </div>
-                    <div className="mt-3 h-11 animate-pulse rounded-2xl bg-slate-100" />
-                  </div>
-                </div>
-              ))}
+          <div className="flex items-center flex-wrap gap-2 mb-4">
+            <div style={{ width: 3, height: 14, borderRadius: 99, background: '#10B981' }} />
+            <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.16em', color: '#374151' }}>
+              Filter Facilities
+            </span>
+            <span className="ml-auto flex items-center gap-2">
+              <span className="fp-stat-pill" style={{ background: '#F8FAFC', color: '#64748B' }}>{filtered.length} shown</span>
+              <span className="fp-stat-pill" style={{ background: '#F0FDF4', color: '#059669' }}>{stats.active} active</span>
+              {canManage && <span className="fp-stat-pill" style={{ background: '#FFF1F2', color: '#E11D48' }}>{stats.inactive} offline</span>}
+            </span>
+          </div>
+
+          <div className={`grid gap-3 grid-cols-1 ${canManage ? 'sm:grid-cols-[1fr_180px_180px]' : 'sm:grid-cols-[1fr_200px]'}`}>
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: '#9CA3AF' }} />
+              <input value={query} onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by name, location, or description…"
+                className="fp-input" style={{ paddingLeft: 40 }} />
             </div>
-          ) : filtered.length === 0 ? (
-            /* ── Empty state ── */
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="w-full rounded-3xl border border-dashed border-slate-300 bg-white p-14 text-center shadow-sm"
-            >
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-100 text-slate-400">
-                <Search className="h-7 w-7" />
+            <div className="relative">
+              <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}
+                className="fp-input fp-select">
+                <option value="ALL">All types</option>
+                {typeOptions.map((t) => <option key={t} value={t}>{prettyType(t)}</option>)}
+              </select>
+              <Caret />
+            </div>
+            {canManage && (
+              <div className="relative">
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                  className="fp-input fp-select">
+                  <option value="ALL">All statuses</option>
+                  <option value="ACTIVE">Active</option>
+                  <option value="OUT_OF_SERVICE">Out of service</option>
+                </select>
+                <Caret />
               </div>
-              <h3 className="mt-5 text-xl font-black tracking-tight text-slate-950">No resources match this view</h3>
-              <p className="mx-auto mt-2 max-w-md text-sm font-medium leading-6 text-slate-500">
-                Try widening the search, switching the status filter, or picking a different facility type.
-              </p>
-            </motion.div>
-          ) : (
-            /* ── Facility cards grid ── */
-            <motion.div
-              variants={stagger}
-              initial="hidden"
-              animate="visible"
-              className={`grid gap-5 grid-cols-1 sm:grid-cols-2${canManage ? ' xl:grid-cols-2' : ' xl:grid-cols-3 2xl:grid-cols-4'}`}
-            >
-              {filtered.map((facility) => {
-                const facilityBookings = bookings.filter((booking) => booking.facilityId === facility.id).length;
-                const utilization = Math.min(100, Math.round(facilityBookings * 16 + Math.min(facility.capacity, 120) / 4));
-                return (
-                  <motion.article
-                    key={facility.id}
-                    variants={fadeUp}
-                    transition={{ duration: 0.4 }}
-                    className={`group flex h-full flex-col overflow-hidden rounded-3xl border bg-white transition duration-300 hover:-translate-y-1 ${isRegularUser
-                      ? 'border-slate-200 shadow-[0_18px_45px_-26px_rgba(15,23,42,0.22)] hover:shadow-[0_28px_55px_-24px_rgba(15,23,42,0.18)]'
-                      : 'border-slate-200 shadow-sm hover:shadow-xl hover:shadow-slate-200/70'
-                      }`}
-                  >
-                    <div className="relative shrink-0 overflow-hidden">
-                      {facility.image ? (
-                        <img src={facility.image} alt={facility.name} className="h-48 w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
-                      ) : (
-                        <div className="flex h-48 w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400">
-                          <Building2 className="h-10 w-10" />
-                        </div>
-                      )}
+            )}
+          </div>
+        </div>
 
-                      <div className="absolute inset-x-0 top-0 flex items-start justify-between p-4">
-                        <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] ${typeAccent[facility.type]}`}>
-                          {prettyType(facility.type)}
-                        </span>
-                        <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] ${facility.status === 'ACTIVE' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
-                          {facility.status === 'ACTIVE' ? 'Live' : 'Paused'}
-                        </span>
-                      </div>
+        {/* ── Main content ───────────────────────────── */}
+        <div className={`fp-u2 ${canManage ? 'grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px] items-start' : ''}`}>
 
-                      <div className={`absolute inset-x-4 bottom-4 rounded-2xl p-3 text-white backdrop-blur ${isRegularUser ? 'bg-white/18 ring-1 ring-white/25' : 'bg-slate-950/85'
-                        }`}>
-                        <div className="flex items-center justify-between gap-4">
-                          <div>
-                            <p className={`text-[10px] font-bold uppercase tracking-[0.22em] ${isRegularUser ? 'text-white/80' : 'text-slate-300'}`}>Utilization</p>
-                            <p className="mt-1 text-xl font-black">{utilization}%</p>
-                          </div>
-                          <div className="text-right">
-                            <p className={`text-[10px] font-bold uppercase tracking-[0.22em] ${isRegularUser ? 'text-white/80' : 'text-slate-300'}`}>Bookings</p>
-                            <p className="mt-1 text-xl font-black">{facilityBookings}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+          <div className="min-w-0">
+            {loadingFacilities ? (
+              <SkeletonGrid canManage={canManage} />
+            ) : filtered.length === 0 ? (
+              <EmptyView />
+            ) : (
+              <div className={`grid gap-5 grid-cols-1 sm:grid-cols-2${canManage ? ' xl:grid-cols-2' : ' xl:grid-cols-3'}`}>
+                {filtered.map((f) => (
+                  <FacilityCard
+                    key={f.id} facility={f}
+                    isRegularUser={isRegularUser} canManage={canManage} isAdmin={isAdmin}
+                    showDeleteConfirm={showDeleteConfirm}
+                    onBook={() => handleBookFacility(f)}
+                    onEdit={() => handleEditFacility(f)}
+                    onToggleStatus={() => toggleFacilityStatus(f.id)}
+                    onDeleteRequest={() => setShowDeleteConfirm(f.id)}
+                    onDeleteCancel={() => setShowDeleteConfirm(null)}
+                    onDeleteConfirm={() => handleDeleteFacility(f.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
 
-                    <div className={`flex flex-1 flex-col gap-4 p-5 ${isRegularUser ? 'bg-gradient-to-b from-white to-slate-50/60' : ''}`}>
-                      <div className="min-w-0 flex-1 space-y-1.5">
-                        {isRegularUser && (
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">
-                              Ready to book
-                            </span>
-                          </div>
-                        )}
-                        <h3 className="line-clamp-1 text-xl font-black tracking-tight text-slate-950">{facility.name}</h3>
-                        <p className="line-clamp-2 text-sm leading-6 text-slate-500">{facility.description}</p>
-                      </div>
+          {canManage && (
+            <div ref={formPanelRef} className="xl:sticky xl:top-6 fp-u3">
+              <FormPanel
+                form={form} setForm={setForm}
+                editingId={editingId}
+                onSubmit={handleCreate}
+                onCancelEdit={handleCancelEdit}
+                onImageUpload={handleImageUpload}
+                onClearImage={clearImage}
+              />
+            </div>
+          )}
 
-                      <div className={`grid gap-3 grid-cols-2`}>
-                        <div className={`rounded-2xl p-3 ${isRegularUser ? 'border border-slate-100 bg-white shadow-sm' : 'bg-slate-50'}`}>
-                          <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                            <MapPin className="h-3 w-3" />
-                            Location
-                          </p>
-                          <p className="mt-1.5 line-clamp-1 text-xs font-semibold text-slate-700">{facility.location}</p>
-                        </div>
-                        <div className={`rounded-2xl p-3 ${isRegularUser ? 'border border-slate-100 bg-white shadow-sm' : 'bg-slate-50'}`}>
-                          <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                            <Users className="h-3 w-3" />
-                            Capacity
-                          </p>
-                          <p className="mt-1.5 text-xs font-semibold text-slate-700">{facility.capacity} seats</p>
-                        </div>
-                      </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-                      {!isRegularUser && (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                            <span>Readiness</span>
-                            <span>{facility.status === 'ACTIVE' ? 'Available for bookings' : 'Maintenance blocked'}</span>
-                          </div>
-                          <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                            <div
-                              className={`h-full rounded-full ${facility.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-rose-500'}`}
-                              style={{ width: `${facility.status === 'ACTIVE' ? Math.max(utilization, 30) : 100}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
+/* ══════════════════════════════════════════════════════════
+   SUB-COMPONENTS
+══════════════════════════════════════════════════════════ */
 
-                      <div className={`flex flex-wrap gap-3 mt-auto ${isRegularUser ? 'items-center rounded-2xl border border-slate-100 bg-white p-3 shadow-sm' : ''}`}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const params = new URLSearchParams({
-                              facilityId: facility.id,
-                              facilityName: facility.name,
-                              resourceType: facility.type,
-                              location: facility.location,
-                            });
-                            navigate(`/bookings/new?${params.toString()}`);
-                          }}
-                          className={`inline-flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition ${isRegularUser
-                            ? 'bg-emerald-600 text-white hover:bg-emerald-500'
-                            : 'bg-slate-950 text-white hover:bg-slate-800'
-                            }`}
-                        >
-                          <Clock3 className="h-4 w-4" />
-                          {isRegularUser ? 'Book this facility' : 'Book resource'}
-                        </button>
+function StatBox({ label, value, accent }: { label: string; value: string | number; accent: string }) {
+  return (
+    <div className="rounded-xl px-4 py-3"
+      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+      <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-1.5" style={{ color: accent }}>{label}</p>
+      <p className="text-2xl font-extrabold leading-none" style={{ color: '#F0FDF4' }}>{value}</p>
+    </div>
+  );
+}
 
-                        {canManage && (
-                          <button
-                            type="button"
-                            onClick={() => handleEditFacility(facility)}
-                            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                          >
-                            <Edit className="h-4 w-4" />
-                            Edit
-                          </button>
-                        )}
-                      </div>
+function Caret() {
+  return (
+    <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+      width="13" height="13" viewBox="0 0 24 24" fill="none"
+      stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
 
-                      {canManage && (
-                        <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-                          {isAdmin && (
-                            <button
-                              type="button"
-                              onClick={() => toggleFacilityStatus(facility.id)}
-                              className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-amber-700 transition hover:bg-amber-100"
-                            >
-                              <ShieldCheck className="h-3.5 w-3.5" />
-                              Toggle status
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => setShowDeleteConfirm(facility.id)}
-                            className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-rose-700 transition hover:bg-rose-100"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            Delete
-                          </button>
-                        </div>
-                      )}
+function SkeletonGrid({ canManage }: { canManage: boolean }) {
+  return (
+    <div className={`grid gap-5 grid-cols-1 sm:grid-cols-2${canManage ? ' xl:grid-cols-2' : ' xl:grid-cols-3'}`}>
+      {Array.from({ length: canManage ? 4 : 6 }).map((_, i) => (
+        <div key={i} className="fp-card">
+          <div className="fp-skeleton h-48 w-full" style={{ borderRadius: 0 }} />
+          <div className="p-5 space-y-3">
+            <div className="fp-skeleton h-4 w-1/3" />
+            <div className="fp-skeleton h-5 w-2/3" />
+            <div className="fp-skeleton h-3 w-full" />
+            <div className="fp-skeleton h-3 w-4/5" />
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div className="fp-skeleton h-14" />
+              <div className="fp-skeleton h-14" />
+            </div>
+            <div className="fp-skeleton h-11 mt-2" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-                      {showDeleteConfirm === facility.id && (
-                        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
-                          <p className="text-sm font-semibold text-rose-900">Delete this facility from the catalogue?</p>
-                          <p className="mt-1 text-sm text-rose-700">This removes it from the current local resource list.</p>
-                          <div className="mt-4 flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteFacility(facility.id)}
-                              className="flex-1 rounded-xl bg-rose-600 px-3 py-2.5 text-sm font-bold text-white hover:bg-rose-700"
-                            >
-                              Confirm delete
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setShowDeleteConfirm(null)}
-                              className="flex-1 rounded-xl border border-rose-200 bg-white px-3 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-50"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </motion.article>
-                );
-              })}
-            </motion.div>
+function EmptyView() {
+  return (
+    <div className="rounded-2xl bg-white p-14 text-center"
+      style={{ border: '1.5px dashed #D1D5DB' }}>
+      <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center"
+        style={{ background: '#F0FDF4' }}>
+        <Search className="h-7 w-7" style={{ color: '#10B981' }} />
+      </div>
+      <h3 className="mt-5 text-lg font-extrabold tracking-tight" style={{ color: '#0C1D11' }}>
+        No facilities match this view
+      </h3>
+      <p className="mx-auto mt-2 max-w-md text-sm" style={{ color: '#6B7280', lineHeight: 1.6 }}>
+        Try widening the search, switching the status filter, or picking a different facility type.
+      </p>
+    </div>
+  );
+}
+
+function FacilityCard({
+  facility, isRegularUser, canManage, isAdmin,
+  showDeleteConfirm,
+  onBook, onEdit, onToggleStatus,
+  onDeleteRequest, onDeleteCancel, onDeleteConfirm,
+}: any) {
+  const accent = typeAccent[facility.type as Facility['type']];
+  const isActive = facility.status === 'ACTIVE';
+
+  return (
+    <article className="fp-card group">
+      <div className="relative">
+        {facility.image ? (
+          <img src={facility.image} alt={facility.name}
+            className="h-44 w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
+        ) : (
+          <div className="h-44 w-full flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, #F5F3EE, #E9E5DC)' }}>
+            <Building2 className="h-12 w-12" style={{ color: '#A8A29E' }} />
+          </div>
+        )}
+
+        <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3">
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.15em]"
+            style={{ background: accent.bg, color: accent.text }}>
+            {prettyType(facility.type)}
+          </span>
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.15em] inline-flex items-center gap-1.5"
+            style={{
+              background: isActive ? '#10B981' : '#E11D48',
+              color: '#fff',
+              boxShadow: isActive
+                ? '0 2px 8px rgba(16,185,129,0.4)'
+                : '0 2px 8px rgba(225,29,72,0.4)',
+            }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+            {isActive ? 'Live' : 'Paused'}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col gap-4 p-5">
+        <div className="min-w-0">
+          <h3 className="text-lg font-extrabold tracking-tight truncate" style={{ color: '#0C1D11' }}>
+            {facility.name}
+          </h3>
+          <p className="mt-1 text-sm leading-6 line-clamp-2" style={{ color: '#6B7280' }}>
+            {facility.description}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <MetaBox icon={<MapPin className="h-3 w-3" />} label="Location" value={facility.location} />
+          <MetaBox icon={<Users  className="h-3 w-3" />} label="Capacity" value={`${facility.capacity} seats`} />
+        </div>
+
+        <div className="flex flex-col gap-2 mt-auto">
+          <button type="button" onClick={onBook} className="fp-btn-primary" disabled={!isActive}>
+            <Clock3 className="h-4 w-4" />
+            {isRegularUser ? 'Book this facility' : 'Book resource'}
+          </button>
+
+          {canManage && (
+            <button type="button" onClick={onEdit} className="fp-btn-secondary">
+              <Edit className="h-3.5 w-3.5" /> Edit details
+            </button>
           )}
         </div>
 
         {canManage && (
-          <motion.div ref={formPanelRef} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.45, delay: 0.2 }} className="space-y-6 xl:sticky xl:top-6">
-            <div className="rounded-3xl border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Facilities Intelligence</p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight">Resource pulse</h2>
-                  <p className="mt-2 text-sm font-medium leading-6 text-slate-300">
-                    A compact operating view of demand, pressure, and maintenance risk.
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-white/10 p-3 text-emerald-300">
-                  <Wrench className="h-5 w-5" />
-                </div>
-              </div>
+          <div className="flex flex-wrap gap-2 pt-3" style={{ borderTop: '1px solid #F0EDE6' }}>
+            {isAdmin && (
+              <button type="button" onClick={onToggleStatus} className="fp-btn-warn">
+                <ShieldCheck className="h-3 w-3" /> Toggle status
+              </button>
+            )}
+            <button type="button" onClick={onDeleteRequest} className="fp-btn-danger">
+              <Trash2 className="h-3 w-3" /> Delete
+            </button>
+          </div>
+        )}
 
-              <div className="mt-6 grid gap-3">
-                <div className="rounded-2xl bg-white/5 p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Top pressure</p>
-                  <p className="mt-2 text-lg font-black">{analytics.busiest?.facility.name ?? 'No data yet'}</p>
-                  <p className="mt-1 text-sm text-slate-300">
-                    {analytics.busiest ? `${analytics.busiest.bookings} bookings currently make this the most requested space.` : 'Create more bookings to reveal the busiest asset.'}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl bg-white/5 p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Support risk</p>
-                  <p className="mt-2 text-lg font-black">{analytics.riskiest?.facility.name ?? 'No active risk'}</p>
-                  <p className="mt-1 text-sm text-slate-300">
-                    {analytics.riskiest ? `${analytics.riskiest.activeTickets} open issue${analytics.riskiest.activeTickets === 1 ? '' : 's'} linked to this resource.` : 'Open facility issues will surface here automatically.'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Utilization ranking</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-200">Highest pressure resources</p>
-                  </div>
-                  <BarChart3 className="h-4 w-4 text-slate-400" />
-                </div>
-
-                <div className="mt-4 space-y-3">
-                  {analytics.utilizationRows.map((row) => (
-                    <div key={row.facility.id} className="rounded-2xl bg-black/20 p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-bold text-white">{row.facility.name}</p>
-                          <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                            {prettyType(row.facility.type)} - {row.bookings} booking{row.bookings === 1 ? '' : 's'}
-                          </p>
-                        </div>
-                        <p className="text-sm font-black text-emerald-300">{row.utilization}%</p>
-                      </div>
-                      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
-                        <div className="h-full rounded-full bg-emerald-400" style={{ width: `${row.utilization}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+        {showDeleteConfirm === facility.id && (
+          <div className="rounded-xl p-3.5 mt-1"
+            style={{ background: '#FFF1F2', border: '1.5px solid #FECDD3' }}>
+            <p className="text-sm font-semibold" style={{ color: '#9F1239' }}>
+              Delete this facility?
+            </p>
+            <p className="mt-1 text-xs" style={{ color: '#BE123C' }}>
+              This action cannot be undone.
+            </p>
+            <div className="flex gap-2 mt-3">
+              <button type="button" onClick={onDeleteConfirm}
+                className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-white"
+                style={{ background: '#E11D48' }}>
+                Confirm
+              </button>
+              <button type="button" onClick={onDeleteCancel}
+                className="flex-1 px-3 py-2 rounded-lg text-xs font-bold"
+                style={{ background: '#fff', color: '#9F1239', border: '1.5px solid #FECDD3' }}>
+                Cancel
+              </button>
             </div>
-
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">
-                    {editingId ? 'Edit resource' : 'Add resource'}
-                  </p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
-                    {editingId ? 'Update facility' : 'Create facility'}
-                  </h2>
-                  <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
-                    {editingId
-                      ? 'Refine the catalogue entry and push the updated operating details live.'
-                      : 'Add a new campus resource with the details users need to discover and book it.'}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-700">
-                  <Plus className="h-5 w-5" />
-                </div>
-              </div>
-
-              <form className="mt-6 space-y-4" onSubmit={handleCreate}>
-                <div>
-                  <label className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Name</label>
-                  <input
-                    required
-                    value={form.name}
-                    onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-300 focus:bg-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Type</label>
-                  <select
-                    value={form.type}
-                    onChange={(event) => setForm((current) => ({ ...current, type: event.target.value as Facility['type'] }))}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none"
-                  >
-                    {typeOptions.map((type) => (
-                      <option key={type} value={type}>{prettyType(type)}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Location</label>
-                    <input
-                      required
-                      value={form.location}
-                      onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))}
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Capacity</label>
-                    <input
-                      required
-                      type="number"
-                      min="1"
-                      value={form.capacity}
-                      onChange={(event) => setForm((current) => ({ ...current, capacity: Number(event.target.value) }))}
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Description</label>
-                  <textarea
-                    required
-                    rows={4}
-                    value={form.description}
-                    onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Facility image</label>
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      id="facility-image-input"
-                    />
-                    <label
-                      htmlFor="facility-image-input"
-                      className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-sm font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-white"
-                    >
-                      <Upload className="h-5 w-5" />
-                      Select cover image
-                    </label>
-                  </div>
-
-                  {form.image && (
-                    <div className="relative mt-3 overflow-hidden rounded-2xl border border-slate-200">
-                      <img src={form.image} alt="Preview" className="h-36 w-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={clearImage}
-                        className="absolute right-3 top-3 rounded-full bg-rose-500 p-1.5 text-white transition hover:bg-rose-600"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    type="submit"
-                    className="flex-1 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-500"
-                  >
-                    {editingId ? 'Update facility' : 'Save facility'}
-                  </button>
-                  {editingId && (
-                    <button
-                      type="button"
-                      onClick={handleCancelEdit}
-                      className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              </form>
-            </div>
-          </motion.div>
+          </div>
         )}
       </div>
+    </article>
+  );
+}
+
+function MetaBox({ icon, label, value }: { icon: any; label: string; value: string }) {
+  return (
+    <div className="rounded-lg p-2.5" style={{ background: '#FAFAF8', border: '1px solid #F0EDE6' }}>
+      <p className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.16em]"
+        style={{ color: '#9CA3AF' }}>
+        {icon} {label}
+      </p>
+      <p className="mt-1 text-xs font-semibold truncate" style={{ color: '#374151' }}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function FormPanel({ form, setForm, editingId, onSubmit, onCancelEdit, onImageUpload, onClearImage }: any) {
+  return (
+    <div className="rounded-2xl bg-white overflow-hidden"
+      style={{ border: '1px solid rgba(0,0,0,0.07)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '18px 24px', borderBottom: '1px solid #F0EDE6' }}>
+        <div style={{ width: 3, height: 18, borderRadius: 99, background: '#10B981' }} />
+        <div style={{ width: 30, height: 30, borderRadius: 9, background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {editingId
+            ? <Wrench className="h-3.5 w-3.5" style={{ color: '#10B981' }} />
+            : <Plus className="h-3.5 w-3.5" style={{ color: '#10B981' }} />
+          }
+        </div>
+        <h2 style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.18em', color: '#374151', margin: 0 }}>
+          {editingId ? 'Edit Facility' : 'Add Facility'}
+        </h2>
+      </div>
+
+      <form onSubmit={onSubmit} className="p-6 space-y-4">
+        <Field label="Name" required>
+          <input required value={form.name}
+            onChange={(e) => setForm((c: any) => ({ ...c, name: e.target.value }))}
+            className="fp-input" placeholder="e.g. Engineering Lab A" />
+        </Field>
+
+        <Field label="Type">
+          <div className="relative">
+            <select value={form.type}
+              onChange={(e) => setForm((c: any) => ({ ...c, type: e.target.value as Facility['type'] }))}
+              className="fp-input fp-select">
+              {typeOptions.map((t) => <option key={t} value={t}>{prettyType(t)}</option>)}
+            </select>
+            <Caret />
+          </div>
+        </Field>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="Location" required>
+            <input required value={form.location}
+              onChange={(e) => setForm((c: any) => ({ ...c, location: e.target.value }))}
+              className="fp-input" placeholder="e.g. Block C, Floor 2" />
+          </Field>
+          <Field label="Capacity" required>
+            <input required type="number" min={1} value={form.capacity}
+              onChange={(e) => setForm((c: any) => ({ ...c, capacity: Number(e.target.value) }))}
+              className="fp-input" />
+          </Field>
+        </div>
+
+        <Field label="Description" required>
+          <textarea required rows={3} value={form.description}
+            onChange={(e) => setForm((c: any) => ({ ...c, description: e.target.value }))}
+            className="fp-input" style={{ resize: 'vertical', minHeight: 90 }}
+            placeholder="Describe the facility…" />
+        </Field>
+
+        <Field label="Cover image">
+          <input type="file" accept="image/*" onChange={onImageUpload}
+            className="hidden" id="facility-image-input" />
+          <label htmlFor="facility-image-input"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 px-4 py-6 rounded-xl text-sm font-semibold transition"
+            style={{ border: '1.5px dashed #D1D5DB', background: '#FAFAF8', color: '#6B7280' }}>
+            <Upload className="h-4 w-4" /> Select image
+          </label>
+
+          {form.image && (
+            <div className="relative mt-3 overflow-hidden rounded-xl"
+              style={{ border: '1px solid #E5E7EB' }}>
+              <img src={form.image} alt="Preview" className="h-32 w-full object-cover" />
+              <button type="button" onClick={onClearImage}
+                className="absolute right-2 top-2 p-1.5 rounded-full text-white transition"
+                style={{ background: '#E11D48' }}>
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+        </Field>
+
+        <div className="flex gap-3 pt-2">
+          <button type="submit" className="fp-btn-primary" style={{ width: 'auto', flex: 1 }}>
+            {editingId ? 'Update Facility' : 'Save Facility'}
+          </button>
+          {editingId && (
+            <button type="button" onClick={onCancelEdit} className="fp-btn-secondary" style={{ flex: 1 }}>
+              Cancel
+            </button>
+          )}
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function Field({ label, required, children }: { label: string; required?: boolean; children: any }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[10px] font-extrabold uppercase tracking-[0.18em]"
+        style={{ color: '#9CA3AF' }}>
+        {label}{required && <span style={{ color: '#E11D48', marginLeft: 2 }}>*</span>}
+      </label>
+      {children}
     </div>
   );
 }

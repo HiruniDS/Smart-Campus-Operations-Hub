@@ -131,22 +131,29 @@ export default function SignupPage() {
 
             <div className="space-y-3">
               <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Select Access Role</Label>
-              <div className="grid grid-cols-3 gap-3">
-                {roles.map((r) => (
-                  <button
-                    key={r.role}
-                    type="button"
-                    onClick={() => setSelectedRole(r.role)}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${selectedRole === r.role
-                        ? 'bg-blue-50 border-blue-200 text-blue-600'
-                        : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'
-                      }`}
-                  >
-                    {r.icon}
-                    <span className="text-[10px] font-bold uppercase tracking-tight">{r.label}</span>
-                  </button>
-                ))}
+              <div className="flex flex-col sm:flex-row gap-3">
+                {roles.map((r) => {
+                  const isSelected = selectedRole === r.role;
+                  return (
+                    <button
+                      key={r.role}
+                      type="button"
+                      onClick={() => setSelectedRole(r.role)}
+                      aria-pressed={isSelected}
+                      className={`flex-1 flex flex-col items-center gap-2 p-3 rounded-xl border transition-all !shadow-none ${isSelected
+                        ? '!bg-blue-50 !border-blue-300 !text-blue-700 ring-2 ring-blue-200'
+                        : '!bg-white !border-slate-200 !text-slate-500 hover:!border-slate-300 hover:!bg-slate-50'
+                        }`}
+                    >
+                      {r.icon}
+                      <span className="text-[10px] font-bold uppercase tracking-tight">{r.label}</span>
+                    </button>
+                  );
+                })}
               </div>
+              <p className="text-[11px] font-semibold text-blue-700">
+                Selected role: {selectedRole}
+              </p>
             </div>
 
             <Button

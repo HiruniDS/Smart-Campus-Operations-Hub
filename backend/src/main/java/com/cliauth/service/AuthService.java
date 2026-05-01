@@ -34,7 +34,7 @@ public class AuthService {
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole("USER");
+        user.setRole(resolveSignupRole(request.getRole()));
         user.setAuthProvider("LOCAL");
         user.setAvatar("https://api.dicebear.com/7.x/avataaars/svg?seed=" + request.getName());
 
@@ -117,5 +117,21 @@ public class AuthService {
 
     private String generateToken() {
         return "token-" + UUID.randomUUID().toString();
+    }
+
+    private String resolveSignupRole(String requestedRole) {
+        if (requestedRole == null || requestedRole.isBlank()) {
+            return "USER";
+        }
+
+        String normalized = requestedRole.trim().toUpperCase();
+        if (normalized.startsWith("ROLE_")) {
+            normalized = normalized.substring(5);
+        }
+
+        return switch (normalized) {
+            case "ADMIN", "TECHNICIAN", "USER" -> normalized;
+            default -> "USER";
+        };
     }
 }

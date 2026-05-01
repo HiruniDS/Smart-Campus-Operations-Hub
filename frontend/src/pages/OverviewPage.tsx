@@ -1,195 +1,316 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import {
-  Building2,
-  MapPin,
-  Users,
-  Clock,
-  ArrowUpRight,
-  CheckCircle2,
-  AlertCircle,
-  Activity,
-  Plus,
-  ArrowRight,
-  Sparkles,
-  Zap,
-  ShieldAlert
+  Building2, Clock, AlertCircle, Activity,
+  Plus, ArrowRight, CalendarDays, Ticket,
+  Users, CheckCircle2, Circle,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { motion } from 'motion/react';
 
+/* ─── Inline styles ───────────────────────────────────────── */
+const STYLE = `
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
+  .ov-root { font-family: 'Outfit', ui-sans-serif, system-ui, sans-serif; }
+  @keyframes ovFadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .ov-u0 { animation: ovFadeUp .35s ease both; }
+  .ov-u1 { animation: ovFadeUp .35s .07s ease both; }
+  .ov-u2 { animation: ovFadeUp .35s .14s ease both; }
+  .ov-u3 { animation: ovFadeUp .35s .21s ease both; }
+
+  .ov-stat-card {
+    background: #fff; border: 1px solid rgba(0,0,0,0.07);
+    border-radius: 18px; padding: 22px 24px;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .ov-stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+
+  .ov-activity-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 14px 22px;
+    border-bottom: 1px solid #F5F3EE;
+    transition: background .15s;
+  }
+  .ov-activity-row:last-child { border-bottom: none; }
+  .ov-activity-row:hover { background: #FAFAF8; }
+
+  .ov-quick-link {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; padding: 13px 16px; border-radius: 12px;
+    text-decoration: none; transition: background .15s, transform .15s;
+    border: 1px solid transparent;
+  }
+  .ov-quick-link:hover {
+    background: #fff;
+    border-color: rgba(0,0,0,0.07);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transform: translateX(2px);
+  }
+
+  .ov-cta {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 22px; border-radius: 12px; cursor: pointer; border: none;
+    font-size: 13px; font-weight: 700; color: #fff; font-family: inherit;
+    background: linear-gradient(135deg, #10B981, #059669);
+    box-shadow: 0 4px 14px rgba(16,185,129,0.32);
+    transition: filter .15s, transform .15s; text-decoration: none;
+  }
+  .ov-cta:hover { filter: brightness(1.08); transform: translateY(-1px); }
+`;
+
+/* ─── Stat card data ──────────────────────────────────────── */
+const STATS = [
+  { label: 'Total Resources', value: '142', badge: '+12%',           badgeBg: '#F0FDF4', badgeText: '#059669', icon: Building2, iconBg: '#F0FDF4', iconColor: '#059669' },
+  { label: 'Active Bookings', value: '48',  badge: '89% capacity',   badgeBg: '#EFF6FF', badgeText: '#2563EB', icon: Clock,     iconBg: '#EFF6FF', iconColor: '#2563EB' },
+  { label: 'Open Incidents',  value: '12',  badge: '-2 this week',   badgeBg: '#FFF1F2', badgeText: '#E11D48', icon: AlertCircle,iconBg: '#FFF1F2',iconColor: '#E11D48' },
+  { label: 'System Uptime',   value: '99.9%', badge: 'All systems go', badgeBg: '#F0FDF4', badgeText: '#059669', icon: Activity,  iconBg: '#FFFBEB', iconColor: '#D97706' },
+];
+
+/* ─── Recent activity (static placeholder) ───────────────── */
+const ACTIVITIES = [
+  { id: 1, user: 'John Doe',    action: 'booked',    target: 'Lab 402',               time: '12m ago', status: 'confirmed' },
+  { id: 2, user: 'Sarah Smith', action: 'reported',  target: 'AC Fault - Floor 2',    time: '45m ago', status: 'pending' },
+  { id: 3, user: 'System',      action: 'optimized', target: 'Energy usage - Zone B', time: '2h ago',  status: 'success' },
+];
+
+const STATUS_CFG: Record<string, { bg: string; text: string; dot: string }> = {
+  confirmed: { bg: '#EFF6FF', text: '#2563EB', dot: '#3B82F6' },
+  pending:   { bg: '#FFFBEB', text: '#D97706', dot: '#F59E0B' },
+  success:   { bg: '#F0FDF4', text: '#059669', dot: '#22C55E' },
+};
+
+/* ─── Quick links ─────────────────────────────────────────── */
+const QUICK_LINKS = [
+  { label: 'New Booking',       sub: 'Request a campus resource',   path: '/bookings/new',            icon: CalendarDays, iconBg: '#F0FDF4',  iconColor: '#059669' },
+  { label: 'Check Availability', sub: 'See open time slots',        path: '/bookings/availability',   icon: Clock,        iconBg: '#EFF6FF',  iconColor: '#2563EB' },
+  { label: 'My Bookings',       sub: 'View your booking history',   path: '/bookings/me',             icon: Building2,    iconBg: '#F5F3FF',  iconColor: '#7C3AED' },
+  { label: 'Raise a Ticket',    sub: 'Report an incident',          path: '/tickets',                 icon: Ticket,       iconBg: '#FFF1F2',  iconColor: '#E11D48' },
+];
+
+/* ── Admin-only quick links ── */
+const ADMIN_LINKS = [
+  { label: 'Review Bookings',   sub: 'Approve or reject requests',  path: '/bookings/admin',          icon: CheckCircle2, iconBg: '#F0FDF4',  iconColor: '#059669' },
+  { label: 'User Management',   sub: 'Manage roles and accounts',   path: '/dashboard/users',         icon: Users,        iconBg: '#FFFBEB',  iconColor: '#D97706' },
+];
+
+/* ══════════════════════════════════════════════════════════
+   PAGE COMPONENT
+══════════════════════════════════════════════════════════ */
 export default function OverviewPage() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  const { user }  = useAuth();
+  const navigate  = useNavigate();
+  const isAdmin   = user?.role === 'ADMIN';
+  const hour      = new Date().getHours();
+  const greeting  = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = user?.name?.split(' ')[0] ?? 'there';
 
-  const stats = [
-    { label: 'Total Resources', value: '142', change: '+12%', icon: Building2 },
-    { label: 'Active Bookings', value: '48', change: '89% capacity', icon: Clock },
-    { label: 'Open Incidents', value: '12', change: '-2 this week', icon: AlertCircle },
-    { label: 'System Uptime', value: '99.9%', change: 'All systems go', icon: Activity },
-  ];
-
-  const recentActivities = [
-    { id: 1, user: 'John Doe', action: 'booked', target: 'Lab 402', time: '12m ago', status: 'confirmed' },
-    { id: 2, user: 'Sarah Smith', action: 'reported', target: 'AC Fault - Floor 2', time: '45m ago', status: 'pending' },
-    { id: 3, user: 'System', action: 'optimized', target: 'Energy usage - Zone B', time: '2h ago', status: 'success' },
-  ];
+  const quickLinks = isAdmin ? [...QUICK_LINKS, ...ADMIN_LINKS] : QUICK_LINKS;
 
   return (
-    <div className="space-y-10">
-      {/* Welcome Section */}
-      <section className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <Badge className="bg-blue-50 text-blue-600 border-blue-100 mb-4 hover:bg-blue-50">Operational Insight</Badge>
-          <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 mb-2">
-            Welcome back, {user?.name?.split(' ')[0] ?? 'User'}
-          </h1>
-          <p className="text-lg text-slate-500 font-medium">
-            Here's what's happening across the campus today.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button className="bg-black text-white hover:bg-slate-800 font-bold h-11 px-6 shadow-sm" onClick={() => navigate('/bookings/new')}>
-            <Plus className="mr-2 h-4 w-4" /> New Booking
-          </Button>
-          {user?.role === 'ADMIN' && (
-            <Button variant="outline" className="h-11 px-6 font-bold text-slate-900 border-slate-200">
-              System Settings
-            </Button>
-          )}
-        </div>
-      </section>
+    <div className="ov-root min-h-screen" style={{ background: '#E9E5DC' }}>
+      <style>{STYLE}</style>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, i) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-          >
-            <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
-                    <stat.icon className="h-4 w-4" />
-                  </div>
-                  <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full uppercase tracking-widest">
-                    {stat.change}
-                  </span>
-                </div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-                <p className="text-3xl font-extrabold tracking-tight text-slate-900">{stat.value}</p>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-16">
 
-      {/* Bento Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* ── Breadcrumb ─────────────────────────────── */}
+        <nav className="ov-u0 flex items-center gap-1.5 text-xs mb-6">
+          <span style={{ color: '#9CA3AF' }} className="font-semibold uppercase tracking-widest">Operations</span>
+          <span style={{ color: '#9CA3AF' }}>›</span>
+          <span style={{ color: '#6B7280' }} className="font-medium">Dashboard</span>
+        </nav>
 
-        {/* Main Feed - Large Bento */}
-        <Card className="lg:col-span-2 border-slate-200 shadow-sm overflow-hidden flex flex-col">
-          <CardHeader className="p-8 border-b border-slate-100 flex flex-row items-center justify-between">
-            <div className="space-y-1">
-              <CardTitle className="text-2xl font-extrabold tracking-tight">Recent Activity</CardTitle>
-              <CardDescription className="text-slate-500 font-medium font-sans">Live updates from the operations hub</CardDescription>
+        {/* ── HERO ───────────────────────────────────── */}
+        <div className="ov-u0 relative overflow-hidden rounded-2xl mb-6"
+          style={{ background: '#0C1D11' }}>
+
+          <div className="absolute inset-0 pointer-events-none" style={{
+            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)',
+            backgroundSize: '26px 26px',
+          }} />
+          <div className="absolute inset-x-0 top-0 h-[3px]"
+            style={{ background: 'linear-gradient(90deg, #10B981 0%, #34D399 50%, #059669 100%)' }} />
+          <div className="absolute -top-24 -left-16 w-72 h-72 rounded-full pointer-events-none"
+            style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.12), transparent 70%)' }} />
+          <div className="absolute bottom-0 right-48 w-56 h-56 rounded-full pointer-events-none"
+            style={{ background: 'radial-gradient(circle, rgba(52,211,153,0.06), transparent 70%)' }} />
+
+          <div className="relative px-8 py-9 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest mb-4"
+                style={{ background: 'rgba(16,185,129,0.14)', color: '#34D399' }}>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Operational Insight
+              </div>
+              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight mb-2"
+                style={{ color: '#F0FDF4' }}>
+                {greeting}, {firstName}
+              </h1>
+              <p className="text-sm" style={{ color: '#9CA3AF', lineHeight: 1.7 }}>
+                Here's what's happening across the campus today.
+              </p>
             </div>
-            <Button variant="ghost" size="sm" className="font-bold text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-              View All <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </CardHeader>
-          <CardContent className="p-0 flex-1">
-            <div className="divide-y divide-slate-100">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-xs ring-4 ring-white shadow-sm ${activity.status === 'confirmed' ? 'bg-blue-100 text-blue-600' :
-                        activity.status === 'success' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'
-                      }`}>
+
+            <div className="flex flex-wrap gap-3 shrink-0">
+              <Link to="/bookings/new" className="ov-cta">
+                <Plus className="h-4 w-4" /> New Booking
+              </Link>
+              {isAdmin && (
+                <Link to="/bookings/admin"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all hover:-translate-y-0.5"
+                  style={{ background: 'rgba(255,255,255,0.07)', color: '#E5E7EB', border: '1px solid rgba(255,255,255,0.12)', textDecoration: 'none' }}>
+                  Review Bookings →
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Stats strip ────────────────────────────── */}
+        <div className="ov-u1 grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {STATS.map(({ label, value, badge, badgeBg, badgeText, icon: Icon, iconBg, iconColor }) => (
+            <div key={label} className="ov-stat-card">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon className="h-4 w-4" style={{ color: iconColor }} />
+                </div>
+                <span style={{ fontSize: 10, fontWeight: 800, background: badgeBg, color: badgeText, padding: '3px 8px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  {badge}
+                </span>
+              </div>
+              <p style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 4 }}>
+                {label}
+              </p>
+              <p style={{ fontSize: 30, fontWeight: 800, color: '#0C1D11', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                {value}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Main grid ──────────────────────────────── */}
+        <div className="ov-u2 grid grid-cols-1 xl:grid-cols-3 gap-5">
+
+          {/* ── Recent Activity — 2/3 width ── */}
+          <div className="xl:col-span-2 rounded-2xl bg-white overflow-hidden"
+            style={{ border: '1px solid rgba(0,0,0,0.07)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+
+            {/* header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 22px', borderBottom: '1px solid #F0EDE6' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 3, height: 16, borderRadius: 99, background: '#10B981' }} />
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Activity className="h-3.5 w-3.5" style={{ color: '#10B981' }} />
+                </div>
+                <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.18em', color: '#374151' }}>
+                  Recent Activity
+                </span>
+              </div>
+              <Link to="/bookings/me"
+                style={{ fontSize: 12, fontWeight: 700, color: '#059669', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                className="hover:opacity-70 transition-opacity">
+                View all <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+
+            {/* rows */}
+            {ACTIVITIES.map((activity) => {
+              const cfg = STATUS_CFG[activity.status] ?? STATUS_CFG.pending;
+              return (
+                <div key={activity.id} className="ov-activity-row">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {/* avatar */}
+                    <div style={{
+                      width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: 800, fontSize: 13,
+                      background: cfg.bg, color: cfg.text,
+                    }}>
                       {activity.user.charAt(0)}
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-slate-900">
-                        {activity.user} <span className="font-medium text-slate-500">{activity.action}</span> {activity.target}
+                      <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', lineHeight: 1.3 }}>
+                        <strong>{activity.user}</strong>{' '}
+                        <span style={{ fontWeight: 400, color: '#6B7280' }}>{activity.action}</span>{' '}
+                        <strong style={{ color: '#059669' }}>{activity.target}</strong>
                       </p>
-                      <p className="text-xs text-slate-400 font-medium">{activity.time}</p>
+                      <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{activity.time}</p>
                     </div>
                   </div>
-                  <Badge variant="outline" className="capitalize text-[10px] font-bold border-slate-200">
+                  <span style={{
+                    fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.14em',
+                    padding: '3px 10px', borderRadius: 99,
+                    background: cfg.bg, color: cfg.text,
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    flexShrink: 0,
+                  }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: cfg.dot, flexShrink: 0 }} />
                     {activity.status}
-                  </Badge>
+                  </span>
                 </div>
-              ))}
+              );
+            })}
+          </div>
+
+          {/* ── Right column ── */}
+          <div className="xl:col-span-1 flex flex-col gap-5">
+
+            {/* Quick Actions card */}
+            <div className="rounded-2xl overflow-hidden"
+              style={{ background: '#0C1D11', border: '1px solid rgba(255,255,255,0.08)' }}>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 22px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ width: 3, height: 16, borderRadius: 99, background: '#10B981' }} />
+                <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.18em', color: '#6EE7B7' }}>
+                  Quick Actions
+                </span>
+              </div>
+
+              <div style={{ padding: '12px' }}>
+                {quickLinks.map(({ label, sub, path, icon: Icon, iconBg, iconColor }) => (
+                  <Link key={path} to={path} className="ov-quick-link"
+                    style={{ textDecoration: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 9, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Icon className="h-3.5 w-3.5" style={{ color: iconColor }} />
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: '#F0FDF4', marginBottom: 1 }}>{label}</p>
+                        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{sub}</p>
+                      </div>
+                    </div>
+                    <ArrowRight className="h-3.5 w-3.5 shrink-0" style={{ color: 'rgba(255,255,255,0.25)' }} />
+                  </Link>
+                ))}
+              </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Sidebar Info - Small Bento Stack */}
-        <div className="space-y-6">
-          {/* Quick Actions Card */}
-          <Card className="border-slate-200 shadow-sm bg-black text-white overflow-hidden">
-            <CardContent className="p-8">
-              <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center mb-6">
-                <Zap className="h-5 w-5 text-yellow-400" />
+            {/* How it works card */}
+            <div className="rounded-2xl p-5 bg-white"
+              style={{ border: '1px solid rgba(0,0,0,0.07)', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+              <div className="flex items-center gap-2 mb-4">
+                <div style={{ width: 3, height: 14, borderRadius: 99, background: '#10B981' }} />
+                <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.18em', color: '#374151', margin: 0 }}>
+                  Quick Guide
+                </p>
               </div>
-              <h3 className="text-xl font-bold mb-2 tracking-tight">Smart Controls</h3>
-              <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-                Optimize energy and resource usage with a single click across all campus zones.
-              </p>
-              <Button className="w-full bg-white text-black hover:bg-slate-200 font-bold">
-                Run Optimizer
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Role-Based Alert for Admin/Technician */}
-          {(user?.role === 'ADMIN' || user?.role === 'TECHNICIAN') && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-            >
-              <Card className="border-red-100 bg-red-50/50 shadow-sm">
-                <CardContent className="p-8">
-                  <div className="flex items-center gap-3 mb-4 text-red-600">
-                    <ShieldAlert className="h-5 w-5" />
-                    <span className="text-xs font-extrabold uppercase tracking-[0.2em]">Security Alert</span>
+              <div className="space-y-4">
+                {[
+                  { n: '01', t: 'Browse available campus facilities and check real-time availability.' },
+                  { n: '02', t: 'Submit a booking request — an admin will review and confirm it.' },
+                  { n: '03', t: 'Report incidents or maintenance issues via the tickets module.' },
+                ].map(({ n, t }) => (
+                  <div key={n} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#10B981', flexShrink: 0, paddingTop: 1 }}>{n}</span>
+                    <div style={{ flex: 1, height: 1, background: 'rgba(16,185,129,0.15)', marginTop: 9 }} />
+                    <p style={{ flex: 5, fontSize: 12, color: '#6B7280', lineHeight: 1.6 }}>{t}</p>
                   </div>
-                  <h3 className="text-lg font-bold text-red-950 mb-2">Infrastructure Alert</h3>
-                  <p className="text-red-800/70 text-sm leading-relaxed mb-6 font-medium">
-                    Server room 4 overheated. Technician dispatch required immediately.
-                  </p>
-                  <Button variant="ghost" className="w-full text-red-600 hover:bg-red-100 hover:text-red-700 font-bold border border-red-200">
-                    Acknowledge
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
-          {/* Productivity Tip */}
-          <Card className="border-slate-200 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <Sparkles className="h-4 w-4 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Did you know?</p>
-                  <p className="text-sm text-slate-700 font-medium leading-relaxed">
-                    Scheduling maintenance during off-peak hours reduces disruption by <span className="text-blue-600 font-bold">45%</span>.
-                  </p>
-                </div>
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
 
+          </div>
+        </div>
       </div>
     </div>
   );

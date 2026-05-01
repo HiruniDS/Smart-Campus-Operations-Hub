@@ -1,333 +1,378 @@
 import React from 'react';
 import { useNavigate, Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
 import {
-  LayoutDashboard,
-  CalendarDays,
-  Building2,
-  Ticket,
-  Users,
-  Bell,
-  Settings,
-  LogOut,
-  Menu,
-  ChevronRight,
-  Search,
-  Command,
-  HelpCircle,
-  User as UserIcon,
-  ChevronDown,
-  Megaphone
+  LayoutDashboard, CalendarDays, Building2, Ticket,
+  Users, Bell, Settings, LogOut, Menu, Search,
+  HelpCircle, User as UserIcon, ChevronDown, Megaphone, X,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
+  DropdownMenu, DropdownMenuContent, DropdownMenuGroup,
+  DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import NotificationPanel from './NotificationPanel';
 import api from '@/lib/api';
 
+/* ─── Inline styles ───────────────────────────────────────── */
+const STYLE = `
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
+  .dl-root { font-family: 'Outfit', ui-sans-serif, system-ui, sans-serif; }
+
+  /* Nav link */
+  .dl-nav-link {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 12px; border-radius: 10px; text-decoration: none;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.04em;
+    color: rgba(255,255,255,0.55);
+    transition: background .15s, color .15s;
+    white-space: nowrap;
+  }
+  .dl-nav-link:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .dl-nav-link.active {
+    background: rgba(16,185,129,0.18);
+    color: #6EE7B7;
+  }
+  .dl-nav-link .dl-nav-icon { opacity: 0.6; transition: opacity .15s; }
+  .dl-nav-link:hover .dl-nav-icon,
+  .dl-nav-link.active .dl-nav-icon { opacity: 1; }
+
+  /* Search */
+  .dl-search {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-radius: 10px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: background .15s, border-color .15s, width .2s;
+    width: 200px;
+  }
+  .dl-search:focus-within {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(16,185,129,0.4);
+    width: 260px;
+  }
+  .dl-search input {
+    background: transparent; border: none; outline: none;
+    font-size: 12px; font-weight: 600; color: #fff;
+    width: 100%; font-family: inherit;
+  }
+  .dl-search input::placeholder { color: rgba(255,255,255,0.35); }
+
+  /* Bell button */
+  .dl-bell {
+    width: 36px; height: 36px; border-radius: 10px; cursor: pointer; border: none;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.6);
+    transition: background .15s, color .15s;
+    position: relative;
+  }
+  .dl-bell:hover { background: rgba(255,255,255,0.13); color: #fff; }
+
+  /* Mobile drawer */
+  .dl-drawer {
+    position: fixed; inset: 0; z-index: 50;
+    display: flex;
+  }
+  .dl-drawer-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(12,29,17,0.65);
+    backdrop-filter: blur(4px);
+  }
+  .dl-drawer-panel {
+    position: relative; z-index: 1;
+    width: 280px; height: 100%;
+    background: #0C1D11;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
+
+  /* Mobile nav link */
+  .dl-mob-link {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; border-radius: 12px;
+    font-size: 13px; font-weight: 700; text-decoration: none;
+    color: rgba(255,255,255,0.6);
+    transition: background .15s, color .15s;
+  }
+  .dl-mob-link:hover { background: rgba(255,255,255,0.07); color: #fff; }
+  .dl-mob-link.active { background: rgba(16,185,129,0.18); color: #6EE7B7; }
+`;
+
 export default function DashboardLayout() {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
-  const [unreadCount, setUnreadCount] = React.useState(0);
+  const navigate  = useNavigate();
+  const location  = useLocation();
 
-  const fetchUnreadCount = async () => {
+  const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
+  const [unreadCount,         setUnreadCount]         = React.useState(0);
+  const [mobileOpen,          setMobileOpen]          = React.useState(false);
+
+  /* ── Unread notification polling ── */
+  const fetchUnreadCount = React.useCallback(async () => {
     if (!user?.id) return;
     try {
-      const response = await api.get(`/notifications/${user.id}/unread-count`);
-      setUnreadCount(response.data);
-    } catch (error) {
-      console.error('Failed to fetch unread count:', error);
-    }
-  };
+      const res = await api.get(`/notifications/${user.id}/unread-count`);
+      setUnreadCount(res.data);
+    } catch { /* silent */ }
+  }, [user?.id]);
 
   React.useEffect(() => {
     fetchUnreadCount();
-    // Poll every 30 seconds for unread count
-    const interval = setInterval(fetchUnreadCount, 30000);
+    const interval = setInterval(fetchUnreadCount, 30_000);
     return () => clearInterval(interval);
-  }, [user?.id]);
+  }, [fetchUnreadCount]);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  const handleLogout = () => { logout(); navigate('/login'); };
 
+  /* ── Menu items ── */
   const menuItems = [
-    {
-      label: 'Overview',
-      icon: LayoutDashboard,
-      path: '/dashboard',
-      roles: ['USER', 'ADMIN', 'TECHNICIAN']
-    },
-    {
-      label: 'Facilities',
-      icon: Building2,
-      path: '/dashboard/facilities',
-      roles: ['USER', 'ADMIN', 'TECHNICIAN']
-    },
-    {
-      label: 'Facility Bookings',
-      icon: CalendarDays,
-      path: '/bookings',
-      roles: ['USER', 'ADMIN']
-    },
-    {
-      label: 'Maintenance Tickets',
-      icon: Ticket,
-      path: '/tickets',
-      roles: ['TECHNICIAN', 'ADMIN', 'USER']
-    },
-    {
-      label: 'System Notices',
-      icon: Megaphone,
-      path: '/dashboard/notices',
-      roles: ['ADMIN']
-    },
-    {
-      label: 'User Management',
-      icon: Users,
-      path: '/dashboard/users',
-      roles: ['ADMIN']
-    },
+    { label: 'Overview',            icon: LayoutDashboard, path: '/dashboard',          roles: ['USER', 'ADMIN', 'TECHNICIAN'] },
+    { label: 'Facilities',          icon: Building2,       path: '/dashboard/facilities', roles: ['USER', 'ADMIN', 'TECHNICIAN'] },
+    { label: 'Facility Bookings',   icon: CalendarDays,    path: '/bookings',            roles: ['USER', 'ADMIN'] },
+    { label: 'Maintenance Tickets', icon: Ticket,          path: '/tickets',             roles: ['TECHNICIAN', 'ADMIN', 'USER'] },
+    { label: 'System Notices',      icon: Megaphone,       path: '/dashboard/notices',   roles: ['ADMIN'] },
+    { label: 'User Management',     icon: Users,           path: '/dashboard/users',     roles: ['ADMIN'] },
   ];
 
-  const filteredMenu = menuItems.filter(item =>
-    !item.roles || (user && item.roles.includes(user.role))
+  const filteredMenu = menuItems.filter(
+    (item) => !item.roles || (user && item.roles.includes(user.role))
   );
 
-  const NavLinks = ({ className = "" }: { className?: string }) => (
-    <nav className={`flex items-center gap-1 ${className}`}>
-      {filteredMenu.map((item) => {
-        const isActive = location.pathname === item.path;
-        return (
-          <Link
-            key={item.path}
-            to={item.path}
-            className={`flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-widest rounded-lg transition-all ${isActive
-                ? 'bg-slate-100 text-black'
-                : 'text-slate-400 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-          >
-            <item.icon className={`h-4 w-4 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-            {item.label}
-          </Link>
-        );
-      })}
-    </nav>
-  );
+  const isActive = (path: string) =>
+    path === '/dashboard' ? location.pathname === path : location.pathname.startsWith(path);
 
-  const AdminLinks = ({ className = "" }: { className?: string }) => {
-    if (user?.role !== 'ADMIN') return null;
-
-    return (
-      <div className={`flex items-center gap-1 ${className}`}>
-        <button className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-all">
-          <Settings className="h-4 w-4 text-slate-400" />
-          Settings
-        </button>
-        <button className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-all">
-          <HelpCircle className="h-4 w-4 text-slate-400" />
-          Support
-        </button>
-        <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-widest text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all">
-          <LogOut className="h-4 w-4 text-red-500" />
-          Logout
-        </button>
-      </div>
-    );
-  };
+  /* ── User initials ── */
+  const initials = user?.name?.charAt(0).toUpperCase() ?? 'U';
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50/50">
-      {/* Top Navigation Bar */}
-      <header className="h-20 border-b border-slate-200 bg-white sticky top-0 z-30 shadow-sm">
-        <div className="max-w-[1600px] mx-auto h-full flex items-center justify-between px-6">
+    <div className="dl-root flex flex-col min-h-screen" style={{ background: '#E9E5DC' }}>
+      <style>{STYLE}</style>
 
-          <div className="flex items-center gap-8">
-            {/* Logo */}
-            <Link to="/dashboard" className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-black text-white shadow-xl shadow-black/10 transition-transform hover:scale-105">
-                <Command className="h-6 w-6" />
-              </div>
-              <span className="text-xl font-extrabold tracking-tighter text-slate-900 leading-none hidden sm:block">SmartCampus<span className="text-blue-600">.</span></span>
-            </Link>
+      {/* ╔══════════════════════════════════════════════╗
+          ║               TOP NAVBAR                    ║
+          ╚══════════════════════════════════════════════╝ */}
+      <header className="sticky top-0 z-30" style={{ background: '#0C1D11' }}>
 
-            {/* Desktop Main Nav */}
-            <div className="hidden lg:flex items-center gap-4">
-              <div className="h-8 w-px bg-slate-100 mx-2" />
-              <NavLinks />
+        {/* emerald top accent stripe */}
+        <div style={{ height: 3, background: 'linear-gradient(90deg, #10B981 0%, #34D399 50%, #059669 100%)' }} />
+
+        {/* dot-grid texture overlay */}
+        <div className="absolute inset-0 pointer-events-none" style={{
+          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)',
+          backgroundSize: '22px 22px', top: 3,
+        }} />
+
+        <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+
+          {/* ── Logo ── */}
+          <Link to="/dashboard" className="flex items-center gap-3 shrink-0">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-sm"
+              style={{ background: 'linear-gradient(135deg, #10B981, #059669)', color: '#fff', boxShadow: '0 0 0 2px rgba(16,185,129,0.3)' }}>
+              SC
             </div>
-          </div>
+            <span className="hidden sm:block text-base font-extrabold tracking-tight" style={{ color: '#F0FDF4' }}>
+              SmartCampus<span style={{ color: '#10B981' }}>.</span>
+            </span>
+          </Link>
 
-          <div className="flex items-center gap-4">
-            {/* Desktop Admin Nav */}
-            <div className="hidden xl:flex items-center gap-4 mr-4">
-              <div className="h-8 w-px bg-slate-100 mx-2" />
-              <AdminLinks />
+          {/* ── Desktop nav ── */}
+          <nav className="hidden lg:flex items-center gap-1 flex-1 ml-4">
+            <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.1)', marginRight: 8 }} />
+            {filteredMenu.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`dl-nav-link ${isActive(item.path) ? 'active' : ''}`}
+              >
+                <item.icon className="dl-nav-icon h-3.5 w-3.5" />
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* ── Right controls ── */}
+          <div className="flex items-center gap-2 shrink-0">
+
+            {/* search */}
+            <div className="dl-search hidden md:flex">
+              <Search className="h-3.5 w-3.5" style={{ color: 'rgba(255,255,255,0.4)', flexShrink: 0 }} />
+              <input type="text" placeholder="Search resources…" />
             </div>
 
-            {/* Search Bar */}
-            <div className="hidden md:flex items-center bg-slate-50 rounded-full px-4 py-2 border border-slate-200 w-64 focus-within:w-80 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
-              <Search className="h-4 w-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search resources..."
-                className="bg-transparent border-none text-xs text-slate-900 focus:ring-0 ml-2 w-full placeholder:text-slate-400 font-bold uppercase tracking-wider"
-              />
-            </div>
-
-            {/* Notifications */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsNotificationsOpen(true)}
-              className="text-slate-500 hover:text-slate-900 relative rounded-full hover:bg-slate-50"
-            >
-              <Bell className="h-5 w-5" />
+            {/* notification bell */}
+            <button className="dl-bell" onClick={() => setIsNotificationsOpen(true)}>
+              <Bell className="h-4 w-4" />
               {unreadCount > 0 && (
-                <span className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white border-2 border-white animate-in zoom-in">
+                <span style={{
+                  position: 'absolute', top: -4, right: -4,
+                  width: 18, height: 18, borderRadius: '50%',
+                  background: '#10B981', color: '#fff',
+                  fontSize: 10, fontWeight: 800,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: '2px solid #0C1D11',
+                }}>
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
-            </Button>
+            </button>
 
             <NotificationPanel
               isOpen={isNotificationsOpen}
               onClose={() => setIsNotificationsOpen(false)}
             />
 
-            {/* User Dropdown */}
+            {/* user dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <div
-                  role="button"
-                  className="flex items-center gap-3 p-1 pr-3 rounded-full hover:bg-slate-50 transition-all border border-transparent hover:border-slate-200 cursor-pointer outline-none"
-                >
-                  <Avatar className="h-9 w-9 border-2 border-white shadow-sm ring-1 ring-slate-100">
+                <div role="button"
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-xl cursor-pointer outline-none transition-colors"
+                  style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
+                  <Avatar className="h-7 w-7">
                     <AvatarImage src={user?.avatar} />
-                    <AvatarFallback className="bg-blue-50 text-blue-600 font-bold">{user?.name?.charAt(0) ?? 'U'}</AvatarFallback>
+                    <AvatarFallback style={{ background: 'linear-gradient(135deg,#10B981,#059669)', color: '#fff', fontSize: 12, fontWeight: 800 }}>
+                      {initials}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="hidden lg:block text-left">
-                    <p className="text-xs font-bold text-slate-900 leading-none mb-1">{user?.name}</p>
-                    <p className="text-[10px] font-bold text-blue-600 uppercase tracking-tighter opacity-70">{user?.role}</p>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: '#F0FDF4', lineHeight: 1.2 }}>{user?.name}</p>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: '#6EE7B7', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                      {user?.role}
+                    </p>
                   </div>
-                  <ChevronDown className="h-3 w-3 text-slate-400 hidden lg:block" />
+                  <ChevronDown className="h-3 w-3 hidden lg:block" style={{ color: 'rgba(255,255,255,0.4)' }} />
                 </div>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 mt-2 p-2 rounded-2xl border-slate-200 shadow-2xl">
+
+              <DropdownMenuContent align="end" className="w-56 mt-2 p-2 rounded-2xl border-slate-200 shadow-2xl" style={{ fontFamily: 'Outfit, sans-serif' }}>
                 <DropdownMenuGroup>
-                  <DropdownMenuLabel className="px-3 py-3">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Signed in as</p>
-                    <p className="text-sm font-bold text-slate-900">{user?.email}</p>
+                  <DropdownMenuLabel className="px-3 py-2">
+                    <p style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 2 }}>
+                      Signed in as
+                    </p>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{user?.email}</p>
                   </DropdownMenuLabel>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator className="bg-slate-100" />
                 <DropdownMenuItem className="rounded-xl py-2 cursor-pointer focus:bg-slate-50">
                   <UserIcon className="mr-3 h-4 w-4 text-slate-400" />
-                  <span className="text-sm font-semibold">My Profile</span>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>My Profile</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="rounded-xl py-2 cursor-pointer focus:bg-slate-50">
                   <Settings className="mr-3 h-4 w-4 text-slate-400" />
-                  <span className="text-sm font-semibold">Settings</span>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="rounded-xl py-2 cursor-pointer focus:bg-slate-50">
+                  <HelpCircle className="mr-3 h-4 w-4 text-slate-400" />
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>Support</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-slate-100" />
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className="rounded-xl py-2 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
-                >
+                <DropdownMenuItem onClick={handleLogout}
+                  className="rounded-xl py-2 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50">
                   <LogOut className="mr-3 h-4 w-4" />
-                  <span className="text-sm font-bold uppercase tracking-wider">Sign Out</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Sign Out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Mobile Menu */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden text-slate-500 rounded-full">
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="top" className="h-auto p-6 bg-white border-b border-slate-200 rounded-b-3xl">
-                <div className="space-y-8 pt-4">
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">Navigation</p>
-                    <div className="grid grid-cols-1 gap-2">
-                      {filteredMenu.map((item) => (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          className="flex items-center gap-4 p-4 text-sm font-bold text-slate-900 bg-slate-50 rounded-2xl"
-                        >
-                          <item.icon className="h-5 w-5 text-blue-600" />
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                  {user?.role === 'ADMIN' && (
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">Administration</p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <button className="flex flex-col items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-transparent hover:border-slate-200 transition-all">
-                          <Settings className="h-6 w-6 text-slate-400" />
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-600">Settings</span>
-                        </button>
-                        <button className="flex flex-col items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-transparent hover:border-slate-200 transition-all">
-                          <HelpCircle className="h-6 w-6 text-slate-400" />
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-600">Support</span>
-                        </button>
-                        <button onClick={handleLogout} className="flex flex-col items-center gap-3 p-4 bg-red-50 rounded-2xl border border-transparent hover:border-red-200 transition-all col-span-2">
-                          <LogOut className="h-6 w-6 text-red-500" />
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-red-600">Logout</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </SheetContent>
-            </Sheet>
+            {/* mobile hamburger */}
+            <button className="lg:hidden dl-bell" onClick={() => setMobileOpen(true)}>
+              <Menu className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Page Content */}
-      <main className="flex-1">
-        <div className="p-6 lg:p-12 max-w-[1600px] mx-auto">
-          {/* Breadcrumbs or Context */}
-          <div className="mb-8 flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
-            <span>Operations</span>
-            <ChevronRight className="h-3 w-3" />
-            <span className="text-slate-900">
-              {location.pathname.split('/').pop() || 'Overview'}
-            </span>
-          </div>
+      {/* ── Mobile drawer ── */}
+      {mobileOpen && (
+        <div className="dl-drawer">
+          <div className="dl-drawer-backdrop" onClick={() => setMobileOpen(false)} />
+          <div className="dl-drawer-panel">
 
-          <Outlet />
+            {/* drawer header */}
+            <div style={{ padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 15, fontWeight: 800, color: '#F0FDF4' }}>
+                SmartCampus<span style={{ color: '#10B981' }}>.</span>
+              </span>
+              <button onClick={() => setMobileOpen(false)}
+                style={{ background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: 8, padding: 6, cursor: 'pointer', color: 'rgba(255,255,255,0.6)' }}>
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* user info strip */}
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#10B981,#059669)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, color: '#fff', flexShrink: 0 }}>
+                {initials}
+              </div>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#F0FDF4', marginBottom: 1 }}>{user?.name}</p>
+                <p style={{ fontSize: 10, fontWeight: 700, color: '#6EE7B7', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{user?.role}</p>
+              </div>
+            </div>
+
+            {/* nav links */}
+            <div style={{ padding: '12px 12px', flex: 1 }}>
+              <p style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.3)', padding: '6px 8px 10px' }}>
+                Navigation
+              </p>
+              {filteredMenu.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`dl-mob-link ${isActive(item.path) ? 'active' : ''}`}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+
+            {/* logout */}
+            <div style={{ padding: '12px 12px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <button onClick={handleLogout}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 14px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                  background: 'rgba(225,29,72,0.1)', color: '#FB7185',
+                  fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
+                }}>
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </button>
+            </div>
+          </div>
         </div>
+      )}
+
+      {/* ╔══════════════════════════════════════════════╗
+          ║               PAGE CONTENT                  ║
+          ╚══════════════════════════════════════════════╝ */}
+      <main className="flex-1">
+        <Outlet />
       </main>
 
-      {/* Footer / Status Bar */}
-      <footer className="py-6 border-t border-slate-200 mt-auto">
-        <div className="max-w-[1600px] mx-auto px-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {[1, 2, 3, 4].map(i => <div key={i} className="h-1 w-8 bg-slate-200 rounded-full" />)}
-            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-2">SmartCampus Infrastructure v4.2</span>
-          </div>
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-4">
-            <span>Server: AP-SOUTH-1</span>
-            <div className="h-1.5 w-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+      {/* ── Minimal footer ── */}
+      <footer style={{
+        borderTop: '1px solid rgba(0,0,0,0.07)',
+        background: '#fff',
+        padding: '14px 24px',
+      }}>
+        <div className="max-w-[1600px] mx-auto flex items-center justify-between">
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+            SmartCampus Operations Platform
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px rgba(16,185,129,0.5)', display: 'inline-block' }} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+              All systems operational
+            </span>
           </div>
         </div>
       </footer>

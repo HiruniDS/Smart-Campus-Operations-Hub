@@ -24,6 +24,8 @@ import BookingDetailsPage from './pages/booking/BookingDetailsPage';
 import AdminBookingReviewPage from './pages/booking/AdminBookingReviewPage';
 import AvailabilityViewPage from './pages/booking/AvailabilityViewPage';
 
+import UserManagementPage from './pages/UserManagementPage';
+
 // Ticket pages
 import TicketsHubPage from './pages/TicketsHubPage';
 import CreateTicketPage from './pages/CreateTicketPage';
@@ -41,52 +43,47 @@ export default function App() {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-          {/* Protected Dashboard Routes */}
+          {/* ── Shared layout: DashboardLayout wraps all protected app pages ── */}
           <Route
-            path="/dashboard"
             element={
               <ProtectedRoute>
                 <DashboardLayout />
               </ProtectedRoute>
             }
           >
-            <Route index element={<OverviewPage />} />
-            <Route path="facilities" element={<FacilitiesPage />} />
-
+            {/* Dashboard routes */}
+            <Route path="dashboard" element={<OverviewPage />} />
+            <Route path="dashboard/facilities" element={<FacilitiesPage />} />
             <Route
-              path="notices"
+              path="dashboard/notices"
               element={
                 <ProtectedRoute allowedRoles={['ADMIN']}>
                   <NoticesPage />
                 </ProtectedRoute>
               }
             />
-
             <Route
-              path="users"
+              path="dashboard/users"
               element={
                 <ProtectedRoute allowedRoles={['ADMIN']}>
-                  <div className="p-8 border border-dashed border-zinc-800 rounded-2xl flex flex-col items-center justify-center min-h-[400px]">
-                    <h2 className="text-xl font-bold text-zinc-100 font-serif italic mb-2">Module E: User Management</h2>
-                    <p className="text-zinc-500 max-w-sm text-center">RBAC administration, role assignment and audit trails.</p>
-                  </div>
+                  <UserManagementPage />
                 </ProtectedRoute>
               }
             />
+
+            {/* Booking routes */}
+            <Route path="bookings" element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']}><BookingDashboardPage /></ProtectedRoute>} />
+            <Route path="bookings/new" element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']}><CreateBookingPage /></ProtectedRoute>} />
+            <Route path="bookings/me" element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']}><MyBookingsPage /></ProtectedRoute>} />
+            <Route path="bookings/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminBookingReviewPage /></ProtectedRoute>} />
+            <Route path="bookings/availability" element={<ProtectedRoute><AvailabilityViewPage /></ProtectedRoute>} />
+            <Route path="bookings/:id" element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']}><BookingDetailsPage /></ProtectedRoute>} />
+
+            {/* Ticket routes */}
+            <Route path="tickets" element={<ProtectedRoute allowedRoles={['TECHNICIAN', 'ADMIN', 'USER']}><TicketsHubPage /></ProtectedRoute>} />
+            <Route path="tickets/new" element={<ProtectedRoute allowedRoles={['USER', 'ADMIN', 'TECHNICIAN']}><CreateTicketPage /></ProtectedRoute>} />
+            <Route path="tickets/:id" element={<ProtectedRoute allowedRoles={['TECHNICIAN', 'ADMIN', 'USER']}><TicketDetailsPage /></ProtectedRoute>} />
           </Route>
-
-          {/* Booking Routes */}
-          <Route path="/bookings" element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']}><BookingDashboardPage /></ProtectedRoute>} />
-          <Route path="/bookings/new" element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']}><CreateBookingPage /></ProtectedRoute>} />
-          <Route path="/bookings/me" element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']}><MyBookingsPage /></ProtectedRoute>} />
-          <Route path="/bookings/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminBookingReviewPage /></ProtectedRoute>} />
-          <Route path="/bookings/availability" element={<ProtectedRoute><AvailabilityViewPage /></ProtectedRoute>} />
-          <Route path="/bookings/:id" element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']}><BookingDetailsPage /></ProtectedRoute>} />
-
-          {/* Ticket Routes - list/details for TECHNICIAN+ADMIN, new ticket for all authenticated */}
-          <Route path="/tickets" element={<ProtectedRoute allowedRoles={['TECHNICIAN', 'ADMIN', 'USER']}><TicketsHubPage /></ProtectedRoute>} />
-          <Route path="/tickets/new" element={<ProtectedRoute allowedRoles={['USER', 'ADMIN', 'TECHNICIAN']}><CreateTicketPage /></ProtectedRoute>} />
-          <Route path="/tickets/:id" element={<ProtectedRoute allowedRoles={['TECHNICIAN', 'ADMIN', 'USER']}><TicketDetailsPage /></ProtectedRoute>} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
