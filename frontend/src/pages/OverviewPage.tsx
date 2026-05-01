@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  Building2, 
-  MapPin, 
-  Users, 
-  Clock, 
-  ArrowUpRight, 
-  CheckCircle2, 
+import {
+  Building2,
+  MapPin,
+  Users,
+  Clock,
+  ArrowUpRight,
+  CheckCircle2,
   AlertCircle,
   Activity,
   Plus,
@@ -92,7 +92,7 @@ export default function OverviewPage() {
 
       {/* Bento Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Main Feed - Large Bento */}
         <Card className="lg:col-span-2 border-slate-200 shadow-sm overflow-hidden flex flex-col">
           <CardHeader className="p-8 border-b border-slate-100 flex flex-row items-center justify-between">
@@ -109,10 +109,9 @@ export default function OverviewPage() {
               {recentActivities.map((activity) => (
                 <div key={activity.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
                   <div className="flex items-center gap-4">
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-xs ring-4 ring-white shadow-sm ${
-                      activity.status === 'confirmed' ? 'bg-blue-100 text-blue-600' : 
-                      activity.status === 'success' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'
-                    }`}>
+                    <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-xs ring-4 ring-white shadow-sm ${activity.status === 'confirmed' ? 'bg-blue-100 text-blue-600' :
+                        activity.status === 'success' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'
+                      }`}>
                       {activity.user.charAt(0)}
                     </div>
                     <div>
@@ -175,19 +174,19 @@ export default function OverviewPage() {
 
           {/* Productivity Tip */}
           <Card className="border-slate-200 shadow-sm">
-             <CardContent className="p-6">
-               <div className="flex items-start gap-4">
-                 <div className="p-2 bg-blue-50 rounded-lg">
-                   <Sparkles className="h-4 w-4 text-blue-600" />
-                 </div>
-                 <div>
-                   <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Did you know?</p>
-                   <p className="text-sm text-slate-700 font-medium leading-relaxed">
-                     Scheduling maintenance during off-peak hours reduces disruption by <span className="text-blue-600 font-bold">45%</span>.
-                   </p>
-                 </div>
-               </div>
-             </CardContent>
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <Sparkles className="h-4 w-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Did you know?</p>
+                  <p className="text-sm text-slate-700 font-medium leading-relaxed">
+                    Scheduling maintenance during off-peak hours reduces disruption by <span className="text-blue-600 font-bold">45%</span>.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
           </Card>
         </div>
 
