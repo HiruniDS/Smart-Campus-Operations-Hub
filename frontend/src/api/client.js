@@ -12,9 +12,13 @@ export function setBasicAuth(username, password) {
   apiClient.defaults.auth = username && password ? { username, password } : undefined;
 }
 
-// Auto-apply credentials from localStorage on every request
+// Auto-apply credentials on every request: Bearer token first, Basic auth as fallback
 apiClient.interceptors.request.use((config) => {
-  if (!config.auth) {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  } else {
     const username = localStorage.getItem('basicAuthUser');
     const password = localStorage.getItem('basicAuthPass');
     if (username && password) {

@@ -40,10 +40,14 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
+        String token = generateToken();
+        savedUser.setToken(token);
+        userRepository.save(savedUser);
+
         return AuthResponse.builder()
                 .status("success")
                 .message("User registered successfully")
-                .token(generateMockToken())
+                .token(token)
                 .user(savedUser)
                 .build();
     }
@@ -70,11 +74,16 @@ public class AuthService {
                     .build();
         }
 
+        User u = userOpt.get();
+        String token = generateToken();
+        u.setToken(token);
+        userRepository.save(u);
+
         return AuthResponse.builder()
                 .status("success")
                 .message("Login successful")
-                .token(generateMockToken())
-                .user(userOpt.get())
+                .token(token)
+                .user(u)
                 .build();
     }
 
@@ -94,15 +103,19 @@ public class AuthService {
             user = userRepository.save(user);
         }
 
+        String token = generateToken();
+        user.setToken(token);
+        user = userRepository.save(user);
+
         return AuthResponse.builder()
                 .status("success")
                 .message("Google login successful")
-                .token(generateMockToken())
+                .token(token)
                 .user(user)
                 .build();
     }
 
-    private String generateMockToken() {
-        return "mock-jwt-" + UUID.randomUUID().toString();
+    private String generateToken() {
+        return "token-" + UUID.randomUUID().toString();
     }
 }

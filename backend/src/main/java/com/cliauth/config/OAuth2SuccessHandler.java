@@ -14,6 +14,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
@@ -25,9 +26,10 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     }
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+            Authentication authentication) throws IOException, ServletException {
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-        
+
         String email = oAuth2User.getAttribute("email");
         String name = oAuth2User.getAttribute("name");
         String avatar = oAuth2User.getAttribute("picture");
@@ -49,8 +51,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         User user;
         if (userOpt.isPresent()) {
             user = userOpt.get();
-            // Optional: Update role if it's a new login attempt with a different role? 
-            // Usually, we keep the existing role, but for this project's testing, 
+            // Optional: Update role if it's a new login attempt with a different role?
+            // Usually, we keep the existing role, but for this project's testing,
             // the user might want to switch roles.
             if (!user.getRole().equals(role)) {
                 user.setRole(role);
@@ -67,12 +69,16 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         }
 
         // Redirect back to frontend with user info
+        String token = "token-" + UUID.randomUUID().toString();
+        user.setToken(token);
+        userRepository.save(user);
+
         String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/dashboard")
                 .queryParam("id", user.getId())
                 .queryParam("email", user.getEmail())
                 .queryParam("name", user.getName())
                 .queryParam("role", user.getRole())
-                .queryParam("token", "mock-jwt-token-google-" + user.getId())
+                .queryParam("token", token)
                 .build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
