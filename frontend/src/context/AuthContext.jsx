@@ -25,7 +25,7 @@ export function useAuth() {
       email: ctx.user.email,
     }
     : { username: '', role: 'USER', name: '', id: '', email: '' },
-  [ctx.user]);
+    [ctx.user]);
 
   return { currentUser };
 }
