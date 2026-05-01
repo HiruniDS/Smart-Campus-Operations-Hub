@@ -8,11 +8,13 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
+import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import OverviewPage from './pages/OverviewPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import NoticesPage from './pages/NoticesPage';
+import FacilitiesPage from './pages/FacilitiesPage';
 
 // Booking pages
 import BookingDashboardPage from './pages/booking/BookingDashboardPage';
@@ -32,6 +34,8 @@ export default function App() {
     <Router>
       <AuthProvider>
         <Routes>
+          <Route path="/" element={<HomePage />} />
+
           {/* Public Routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
@@ -47,6 +51,7 @@ export default function App() {
             }
           >
             <Route index element={<OverviewPage />} />
+            <Route path="facilities" element={<FacilitiesPage />} />
 
             <Route
               path="notices"
@@ -84,7 +89,6 @@ export default function App() {
           <Route path="/tickets/:id" element={<ProtectedRoute><TicketDetailsPage /></ProtectedRoute>} />
 
           {/* Fallback */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AuthProvider>

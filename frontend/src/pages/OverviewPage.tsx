@@ -43,7 +43,7 @@ export default function OverviewPage() {
         <div>
           <Badge className="bg-blue-50 text-blue-600 border-blue-100 mb-4 hover:bg-blue-50">Operational Insight</Badge>
           <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 mb-2">
-            Welcome back, {user?.name.split(' ')[0]}
+            Welcome back, {user?.name?.split(' ')[0] ?? 'User'}
           </h1>
           <p className="text-lg text-slate-500 font-medium">
             Here's what's happening across the campus today.

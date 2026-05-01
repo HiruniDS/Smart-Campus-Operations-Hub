@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
   CalendarDays,
+  Building2,
   Ticket,
   Users,
   Bell,
@@ -67,6 +68,12 @@ export default function DashboardLayout() {
       label: 'Overview',
       icon: LayoutDashboard,
       path: '/dashboard',
+      roles: ['USER', 'ADMIN', 'TECHNICIAN']
+    },
+    {
+      label: 'Facilities',
+      icon: Building2,
+      path: '/dashboard/facilities',
       roles: ['USER', 'ADMIN', 'TECHNICIAN']
     },
     {
@@ -209,7 +216,7 @@ export default function DashboardLayout() {
                 >
                   <Avatar className="h-9 w-9 border-2 border-white shadow-sm ring-1 ring-slate-100">
                     <AvatarImage src={user?.avatar} />
-                    <AvatarFallback className="bg-blue-50 text-blue-600 font-bold">{user?.name.charAt(0)}</AvatarFallback>
+                    <AvatarFallback className="bg-blue-50 text-blue-600 font-bold">{user?.name?.charAt(0) ?? 'U'}</AvatarFallback>
                   </Avatar>
                   <div className="hidden lg:block text-left">
                     <p className="text-xs font-bold text-slate-900 leading-none mb-1">{user?.name}</p>
